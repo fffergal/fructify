@@ -1,5 +1,6 @@
-build/test: test_passenger_wsgi.py passenger_wsgi.py build
-	py.test
+build/test: test_passenger_wsgi.py passenger_wsgi.py build/venv/bin/tox
+	. build/venv/bin/activate
+	tox
 	touch build/test
 
 build/reload: build/put
@@ -9,6 +10,13 @@ build/reload: build/put
 build/put: ftp.txt build/test
 	sftp -b ftp.txt "$(SSH_USER)@ifttt.bfot.co.uk"
 	touch build/put
+
+build/venv/bin/tox: build/venv
+	. build/venv/bin/activate
+	pip install tox
+
+build/venv:
+	virtualenv build/venv
 
 build:
 	mkdir build
