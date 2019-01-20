@@ -1,0 +1,15 @@
+---
+version: 2
+jobs:
+  build:
+    docker:
+      - image: circleci/python:2.7-stretch
+    steps:
+      - checkout
+      - restore_cache:
+          paths: build
+          key: v1-build-{{ .Branch }} 
+      - run: make
+      - save_cache:
+          paths: build
+          key: v1-build-{{ .Branch }} 
