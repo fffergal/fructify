@@ -1,7 +1,7 @@
 ---
 version: 2
 jobs:
-  build:
+  test:
     docker:
       - image: circleci/python:2.7-stretch
     steps:
@@ -9,7 +9,30 @@ jobs:
       - restore_cache:
           paths: build
           key: v1-build-{{ .Branch }} 
-      - run: make
+      - run: make build/test
       - save_cache:
           paths: build
           key: v1-build-{{ .Branch }} 
+  deploy:
+    docker:
+      - image: circleci/python:2.7-stretch
+    steps:
+      - checkout
+      - restore_cache:
+          paths: build
+          key: v1-build-{{ .Branch }}
+      - run: make build/reload
+      - save_cache:
+          paths: build
+          key: v1-build-{{ .Branch }}
+workflows:
+  version: 2
+  test:
+    jobs:
+      - test
+  deploy:
+    jobs:
+      - deploy:
+          filters:
+            branches:
+              only: master
