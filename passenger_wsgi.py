@@ -96,7 +96,7 @@ def days_until_route(environ, start_response):
         start_response("405 Method not allowed", [("Content-type", "text/plain")])
         return ["POST only please"]
     with closing(environ["wsgi.input"]) as request_body_file:
-        request_body = request_body_file.read()
+        request_body = request_body_file.read(int(environ["CONTENT_LENGTH"]))
     parsed_request = json.loads(request_body)
     from_date = parsed_request["from_date"]
     target_date = parsed_request["target_date"]
