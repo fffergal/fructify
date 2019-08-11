@@ -59,15 +59,25 @@ def wedding(environ, start_response):
 
 
 def debug(environ, start_response):
-    start_response("200 OK", [("Content-type", "application/json")])
-    return [json.dumps(urlparse.parse_qs(environ["QUERY_STRING"]), indent=2)]
+    if environ["REQUEST_METHOD"] != "POST":
+        start_response("200 OK", [("Content-type", "application/json")])
+        return [json.dumps(urlparse.parse_qs(environ["QUERY_STRING"]), indent=2)]
+    with closing(environ["wsgi.input"]) as request_body_file:
+        request_body = request_body_file.read(int(environ["CONTENT_LENGTH"]))
+    start_response("200 OK", [("Content-type", "text/plain")])
+    return [request_body]
 
 
 def dropbox_debug(environ, start_response):
+    if environ["REQUEST_METHOD"] != "POST":
+        payload = json.dumps(urlparse.parse_qs(environ["QUERY_STRING"]), indent=2)
+    else:
+        with closing(environ["wsgi.input"]) as request_body_file:
+            payload = request_body_file.read(int(environ["CONTENT_LENGTH"]))
     request = urllib2.Request(
         "https://maker.ifttt.com/trigger/dropbox-debug/with/key/dnaJW0wSYg5wScT5JZi-_o",
         json.dumps(
-            {"value1": json.dumps(urlparse.parse_qs(environ["QUERY_STRING"]), indent=2)}
+            {"value1": payload}
         ),
         {"Content-type": "application/json"},
     )
