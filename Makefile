@@ -9,7 +9,7 @@ build/test: test_passenger_wsgi.py passenger_wsgi.py build/venv-$(PWD_HASH)/bin/
 	touch build/test
 
 build/reload: build/put
-	ssh "$(SSH_USER)@ifttt.bfot.co.uk" ps -C python -o pid=,args= | grep '/usr/bin/python /dh/passenger/helper-scripts/wsgi-loader\.py' | awk '{print $$1}' | xargs ssh "$(SSH_USER)@ifttt.bfot.co.uk" kill
+	ssh "$(SSH_USER)@ifttt.bfot.co.uk" ps -C python -o pid=,args= | grep '/usr/bin/python /usr/share/passenger/helper-scripts/wsgi-loader\.py' | awk '{print $$1}' | xargs ssh "$(SSH_USER)@ifttt.bfot.co.uk" kill
 	touch build/reload
 
 build/put: ftp.txt build/test
