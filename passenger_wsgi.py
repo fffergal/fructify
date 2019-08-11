@@ -132,6 +132,56 @@ def days_until_route(environ, start_response):
     return lines
 
 
+GCAL_DATETIME_FORMAT = "%B %d, %Y at %I:%M%p"
+TRELLO_USERS_TO_NAMES = {
+    "@fffergal": "Fergal",
+    "@annaarmstrong11": "Anna",
+}
+
+
+def cleaning_from_gcal(environ, start_response):
+    if environ["REQUEST_METHOD"] != "POST":
+        start_response("405 Method not allowed", [("Content-type", "text/plain")])
+        return ["POST only please"]
+    with closing(environ["wsgi.input"]) as request_body_file:
+        request_body = request_body_file.read(int(environ["CONTENT_LENGTH"]))
+    parsed_request = json.loads(request_body)
+    gcal_datetime = parsed_request["datetime"]
+    title = parsed_request["title"]
+    trello_user = parsed_request["description"]
+    parsed_datetime = datetime.datetime.strptime(gcal_datetime, GCAL_DATETIME_FORMAT)
+    name = TRELLO_USERS_TO_NAMES[trello_user]
+    telegram_request = urllib2.Request(
+        "https://maker.ifttt.com/trigger/telegram_afb/with/key/dnaJW0wSYg5wScT5JZi-_o",
+        json.dumps(
+            {
+                "value1": "{name}: {title}".format(
+                    name=name, title=title
+                ),
+            }
+        ),
+        {"Content-type": "application/json"},
+    )
+    with closing(urllib2.urlopen(telegram_request)) as response:
+        lines = list(response.readlines())
+    trello_request = urllib2.Request(
+        "https://maker.ifttt.com/trigger/add_cleaning_trello/with/key/dnaJW0wSYg5wScT5JZi-_o",
+        json.dumps(
+            {
+                "value1": "{title} ({parsed_datetime:%a %d %b})".format(
+                    title=title, parsed_datetime=parsed_datetime
+                ),
+                "value2": trello_user,
+            }
+        ),
+        {"Content-type": "application/json"},
+    )
+    with closing(urllib2.urlopen(trello_request)) as response:
+        lines.extend(response.readlines())
+    start_response("200 OK", [("Content-type", "text/plain")])
+    return lines
+
+
 def error_debug_route(environ, start_response):
     raise Exception
 
@@ -143,6 +193,7 @@ routes = {
     "/v1/days-until": days_until_route,
     "/v1/error-debug": error_debug_route,
     "/v1/dropbox-log": dropbox_log_route,
+    "/v1/cleaning-from-gcal": cleaning_from_gcal,
 }
 
 
