@@ -1,3 +1,4 @@
+import datetime
 import json
 import logging
 import logging.handlers
@@ -7,7 +8,6 @@ import traceback
 import urllib2
 import urlparse
 from contextlib import closing
-from datetime import datetime
 
 
 LOGS_DIR = "logs"
@@ -46,7 +46,7 @@ class JSONLogFormatter(logging.Formatter):
 
 
 def wedding(environ, start_response):
-    days = days_until(datetime.today(), datetime(2020, 10, 10))
+    days = days_until(datetime.datetime.today(), datetime.datetime(2020, 10, 10))
     request = urllib2.Request(
         "https://maker.ifttt.com/trigger/notify/with/key/dnaJW0wSYg5wScT5JZi-_o",
         '{{"value1": "{} days until wedding."}}'.format(days),
@@ -101,8 +101,8 @@ def days_until_route(environ, start_response):
     from_date = parsed_request["from_date"]
     target_date = parsed_request["target_date"]
     target_label = parsed_request["target_label"]
-    parsed_from_date = datetime.strptime(from_date, "%B %d, %Y at %I:%M%p")
-    parsed_target_date = datetime.strptime(target_date, "%Y-%m-%d")
+    parsed_from_date = datetime.datetime.strptime(from_date, "%B %d, %Y at %I:%M%p")
+    parsed_target_date = datetime.datetime.strptime(target_date, "%Y-%m-%d")
     safe_target_label = target_label[:50]
     days = days_until(parsed_from_date, parsed_target_date)
     request = urllib2.Request(
