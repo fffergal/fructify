@@ -12,7 +12,7 @@ build/reload: build/put
 	ssh "$(SSH_USER)@ifttt.bfot.co.uk" ps -C python -o pid=,args= | grep '/usr/bin/python /usr/share/passenger/helper-scripts/wsgi-loader\.py' | awk '{print $$1}' | xargs ssh "$(SSH_USER)@ifttt.bfot.co.uk" kill
 	touch build/reload
 
-build/put: ftp.txt build/test
+build/put: ftp.txt htaccess build/test
 	sftp -b ftp.txt "$(SSH_USER)@ifttt.bfot.co.uk"
 	touch build/put
 

@@ -1,2 +1,3 @@
 cd ifttt.bfot.co.uk
 put passenger_wsgi.py
+put htaccess .htaccess
