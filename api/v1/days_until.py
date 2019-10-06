@@ -41,4 +41,4 @@ def app(environ, start_response):
 
 
 def days_until(date_from, date_to):
-    return (date_to - date_from).days + 1
+    return (date_to - date_from).days + 2
