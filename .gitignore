@@ -1,4 +1,4 @@
 *.pyc
 build
-.tox*
-logs/
+.now
+.env

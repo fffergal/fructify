@@ -3,45 +3,12 @@ version: 2
 jobs:
   test:
     docker:
-      - image: circleci/python:2.7-stretch
+      - image: circleci/python:3.6
     steps:
       - checkout
-      - restore_cache:
-          paths: build
-          key: v1-build-{{ .Branch }} 
-      - run: make build/test
-      - save_cache:
-          paths: build
-          key: v1-build-{{ .Branch }} 
-  deploy:
-    docker:
-      - image: circleci/python:2.7-stretch
-    steps:
-      - add_ssh_keys:
-          fingerprints:
-            - eb:5e:4b:b0:34:ad:58:bd:00:94:46:3e:ec:e4:70:d1
-      - run: ssh-keyscan -H -t rsa ifttt.bfot.co.uk > ~/.ssh/known_hosts
-      - checkout
-      - restore_cache:
-          paths: build
-          key: v1-build-{{ .Branch }}
-      - run: make build/reload
-      - save_cache:
-          paths: build
-          key: v1-build-{{ .Branch }}
+      - run: make
 workflows:
   version: 2
   test:
     jobs:
-      - test:
-          filters:
-            branches:
-              ignore:
-                - master
-  deploy:
-    jobs:
-      - deploy:
-          filters:
-            branches:
-              only:
-                - master
+      - test
