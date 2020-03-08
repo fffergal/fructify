@@ -1,5 +1,6 @@
 {
   "env": {
-    "IFTTT_KEY": "@ifttt_key"
+    "IFTTT_KEY": "@ifttt_key",
+    "HONEYCOMB_KEY": "@honeycomb_key"
   }
 }

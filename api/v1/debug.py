@@ -2,7 +2,10 @@ import contextlib
 import json
 import urllib.parse
 
+from fructify.tracing import with_tracing
 
+
+@with_tracing
 def app(environ, start_response):
     if environ["REQUEST_METHOD"] != "POST":
         start_response("200 OK", [("Content-type", "application/json")])
