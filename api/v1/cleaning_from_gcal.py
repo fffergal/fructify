@@ -4,11 +4,14 @@ import json
 import os
 import urllib.request
 
+from fructify.tracing import with_tracing
+
 
 GCAL_DATETIME_FORMAT = "%B %d, %Y at %I:%M%p"
 TRELLO_USERS_TO_NAMES = {"@fffergal": "Fergal", "@annaarmstrong11": "Anna"}
 
 
+@with_tracing
 def app(environ, start_response):
     if environ["REQUEST_METHOD"] != "POST":
         start_response("405 Method not allowed", [("Content-type", "text/plain")])

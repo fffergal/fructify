@@ -4,7 +4,10 @@ import json
 import os
 import urllib
 
+from fructify.tracing import with_tracing
 
+
+@with_tracing
 def app(environ, start_response):
     if environ["REQUEST_METHOD"] != "POST":
         start_response("405 Method not allowed", [("Content-type", "text/plain")])
