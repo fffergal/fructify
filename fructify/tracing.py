@@ -1,3 +1,4 @@
+import atexit
 import os
 
 import beeline
@@ -11,4 +12,5 @@ def with_tracing(app):
         dataset="IFTTT webhooks",
         service_name="fructify",
     )
+    atexit.register(beeline.close)
     return HoneyWSGIMiddleware(app)
