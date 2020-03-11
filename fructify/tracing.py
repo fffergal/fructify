@@ -1,4 +1,5 @@
 import atexit
+import logging
 import os
 import threading
 
@@ -9,6 +10,8 @@ from beeline.middleware.bottle import HoneyWSGIMiddleware
 
 def with_tracing(app):
     """Add tracing to a WSGI app."""
+    logger = logging.getLogger(__name__)
+    logger.setLevel(logging.DEBUG)
     app_with_honeycomb_middleware = HoneyWSGIMiddleware(app)
 
     def traced_init_app(environ, start_response):
@@ -31,7 +34,9 @@ def with_tracing(app):
                 # WSGI args are always passed positionally.
                 return start_response(status, response_headers, exc_info)
             finally:
+                logger.debug("Flushing honeycomb")
                 libhoney.flush()
+                logger.debug("Flushed honeycomb")
 
         return app_with_honeycomb_middleware(environ, flush_start_response)
 
