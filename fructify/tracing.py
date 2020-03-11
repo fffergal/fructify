@@ -9,6 +9,7 @@ from beeline.middleware.bottle import HoneyWSGIMiddleware
 
 def with_tracing(app):
     """Add tracing to a WSGI app."""
+    app_with_honeycomb_middleware = HoneyWSGIMiddleware(app)
 
     def traced_init_app(environ, start_response):
         # Import time could happen before forking, so init beeline just before first
@@ -32,8 +33,9 @@ def with_tracing(app):
             finally:
                 libhoney.flush()
 
-        return app(environ, flush_start_response)
-    return HoneyWSGIMiddleware(traced_init_app)
+        return app_with_honeycomb_middleware(environ, flush_start_response)
+
+    return traced_init_app
 
 
 with_tracing.beeline_inited = False
