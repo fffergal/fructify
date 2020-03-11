@@ -3,6 +3,7 @@ import os
 import threading
 
 import beeline
+import libhoney
 from beeline.middleware.bottle import HoneyWSGIMiddleware
 
 
@@ -23,7 +24,15 @@ def with_tracing(app):
                 atexit.register(beeline.close)
                 with_tracing.beeline_inited = True
 
-        return app(environ, start_response)
+        # The app can be suspended so flush all traces.
+        def flush_start_response(status, response_headers, exc_info=None):
+            try:
+                # WSGI args are always passed positionally.
+                return start_response(status, response_headers, exc_info)
+            finally:
+                libhoney.flush()
+
+        return app(environ, flush_start_response)
     return HoneyWSGIMiddleware(traced_init_app)
 
 
