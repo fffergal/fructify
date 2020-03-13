@@ -12,6 +12,10 @@ def with_tracing(app):
     """Add tracing to a WSGI app."""
     logger = logging.getLogger(__name__)
     logger.setLevel(logging.DEBUG)
+    handler = logging.StreamHandler()
+    handler.setLevel(logging.DEBUG)
+    handler.setFormatter(logging.Formatter(fmt="%(levelname)s:%(name)s:%(message)s"))
+    logger.addHandler(handler)
     app_with_honeycomb_middleware = HoneyWSGIMiddleware(app)
 
     def traced_init_app(environ, start_response):
