@@ -4,7 +4,6 @@ import os
 import threading
 
 import beeline
-import libhoney
 from beeline.middleware.bottle import HoneyWSGIMiddleware
 
 
@@ -39,7 +38,7 @@ def with_tracing(app):
                 return start_response(status, response_headers, exc_info)
             finally:
                 logger.debug("Flushing honeycomb")
-                libhoney.flush()
+                beeline.get_beeline().client.flush()
                 logger.debug("Flushed honeycomb")
 
         return app_with_honeycomb_middleware(environ, flush_start_response)
