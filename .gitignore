@@ -3,3 +3,4 @@ build
 .now
 .env
 *.egg-info
+.tox

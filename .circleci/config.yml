@@ -6,7 +6,12 @@ jobs:
       - image: circleci/python:3.6
     steps:
       - checkout
-      - run: make
+      - run: black --check .
+      - run: flake8
+      - run: tox
+      - run: pip-compile
+      - run: pip-compile dev-requirements.in
+      - run: git diff --exit-code -- dev-requirements.txt requirements.txt
 workflows:
   version: 2
   test:
