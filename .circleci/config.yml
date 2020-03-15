@@ -6,6 +6,7 @@ jobs:
       - image: circleci/python:3.6
     steps:
       - checkout
+      - run: pip install -r dev-requirements.txt
       - run: black --check .
       - run: flake8
       - run: tox
