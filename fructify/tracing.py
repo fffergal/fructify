@@ -2,6 +2,7 @@ import atexit
 import logging
 import os
 import threading
+import traceback
 
 import beeline
 from beeline.middleware.bottle import HoneyWSGIMiddleware
@@ -29,7 +30,16 @@ def with_tracing(app):
             # start_response. Could alternatively try something with
             # beeline.finish_trace and
             # beeline.get_beeline().tracer_impl.get_active_trace_id().
-            start_response("500 Server error", [], (type(e), e, e.__traceback__))
+            exc_info = (type(e), e, e.__traceback__)
+            beeline.add_context(
+                {
+                    "request.error": str(type(e).__name__),
+                    "request.error_detail": "".join(
+                        traceback.format_exception(*exc_info)
+                    ),
+                }
+            )
+            start_response("500 Server error", [], exc_info)
             raise e
 
     honeyed_app = HoneyWSGIMiddleware(end_trace_error_app)
