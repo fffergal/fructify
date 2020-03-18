@@ -15,8 +15,27 @@ def with_tracing(app):
     handler.setLevel(logging.DEBUG)
     handler.setFormatter(logging.Formatter(fmt="%(levelname)s:%(name)s:%(message)s"))
     logger.addHandler(handler)
-    app_with_honeycomb_middleware = HoneyWSGIMiddleware(app)
 
+    # Error catching needs to be done close to the original app, after start_response
+    # has been replaced with the honeycomb version.
+    def end_trace_error_app(environ, start_response):
+        try:
+            return app(environ, start_response)
+        except Exception as e:
+            # If there is an exception, try sending 500 which will finish the trace. If
+            # start_response has already been called, it should raise the original
+            # exception but won't finish the trace.
+            # There's no reference to the trace at this point so can't end without using
+            # start_response. Could alternatively try something with
+            # beeline.finish_trace and
+            # beeline.get_beeline().tracer_impl.get_active_trace_id().
+            start_response("500 Server error", [], (type(e), e, e.__traceback__))
+            raise e
+
+    honeyed_app = HoneyWSGIMiddleware(end_trace_error_app)
+
+    # Flushing app has to go outside the honeyed_app so the trace is finished before
+    # flush is called.
     def traced_init_app(environ, start_response):
         # Import time could happen before forking, so init beeline just before first
         # response.
@@ -41,7 +60,7 @@ def with_tracing(app):
                 beeline.get_beeline().client.flush()
                 logger.debug("Flushed honeycomb")
 
-        return app_with_honeycomb_middleware(environ, flush_start_response)
+        return honeyed_app(environ, flush_start_response)
 
     return traced_init_app
 
