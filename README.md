@@ -4,16 +4,16 @@ Webhooks to make me more productive. For use with IFTTT.
 
 ## Quick start
 
-Frucitify is deployed to [ZEIT Now][now]. You can use the [CLI][cli] to run a
+Frucitify is deployed to [Vercel][vercel]. You can use the [CLI][cli] to run a
 local version too.
 
 Secrets are inserted as environment variables. You can see which secrets are
-needed by looking in now.json. Put local secrets in a .env file.
+needed by looking in vercel.json. Put local secrets in a .env file.
 
-Start a local server with `now dev`.
+Start a local server with `vercel dev`.
 
-[now]: https://zeit.co/now
-[cli]: https://zeit.co/download
+[vercel]: https://vercel.com/
+[cli]: https://vercel.com/download
 
 ## Contributing
 
