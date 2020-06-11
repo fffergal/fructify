@@ -4,13 +4,20 @@
 #
 #    pip-compile
 #
+blinker==1.4              # via fructify (setup.py)
 certifi==2019.11.28       # via requests
 chardet==3.0.4            # via requests
+click==7.1.2              # via flask
+flask==1.1.2              # via fructify (setup.py)
 honeycomb-beeline==2.11.4  # via fructify (setup.py)
 idna==2.9                 # via requests
+itsdangerous==1.1.0       # via flask
+jinja2==2.11.2            # via flask
 libhoney==1.9.0           # via honeycomb-beeline
+markupsafe==1.1.1         # via jinja2
 requests==2.23.0          # via libhoney
 six==1.14.0               # via libhoney
 statsd==3.3.0             # via libhoney
 urllib3==1.25.8           # via requests
+werkzeug==1.0.1           # via flask
 wrapt==1.12.1             # via honeycomb-beeline
