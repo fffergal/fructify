@@ -23,7 +23,7 @@ def app(environ, start_response):
     title = parsed_request["title"]
     trello_user = parsed_request["description"]
     parsed_datetime = datetime.datetime.strptime(gcal_datetime, GCAL_DATETIME_FORMAT)
-    name = TRELLO_USERS_TO_NAMES[trello_user]
+    name = TRELLO_USERS_TO_NAMES.get(trello_user, "Someone")
     ifttt_key = os.environ["IFTTT_KEY"]
     telegram_request = urllib.request.Request(
         f"https://maker.ifttt.com/trigger/telegram_afb/with/key/{ifttt_key}",
