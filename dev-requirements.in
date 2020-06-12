@@ -1,5 +1,5 @@
 -c requirements.txt
 pip-tools~=5.2
-tox~=3.14
+tox~=3.15
 flake8~=3.7
 black~=19.10b0
