@@ -96,6 +96,7 @@ def with_flask_tracing(app):
                 writekey=os.environ["HONEYCOMB_KEY"],
                 dataset="IFTTT webhooks",
                 service_name="fructify",
+                presend_hook=presend,
             )
             with_flask_tracing.beeline_inited = True
         try:
@@ -109,3 +110,10 @@ def with_flask_tracing(app):
 
 
 with_flask_tracing.beeline_inited = False
+
+
+def presend(fields):
+    if os.environ["IFTTT_KEY"] in fields.get("request.url", ""):
+        fields["request.url"] = fields["request.url"].replace(
+            os.environ["IFTTT_KEY"], "<ifttt_key>"
+        )
