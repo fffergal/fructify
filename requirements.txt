@@ -15,7 +15,7 @@ itsdangerous==1.1.0       # via flask
 jinja2==2.11.2            # via flask
 libhoney==1.9.0           # via honeycomb-beeline
 markupsafe==1.1.1         # via jinja2
-requests==2.23.0          # via libhoney
+requests==2.23.0          # via fructify (setup.py), libhoney
 six==1.14.0               # via libhoney
 statsd==3.3.0             # via libhoney
 urllib3==1.25.8           # via requests

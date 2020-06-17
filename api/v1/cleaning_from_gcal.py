@@ -1,56 +1,42 @@
-import contextlib
 import datetime
-import json
 import os
-import urllib.request
 
-from fructify.tracing import with_tracing
+from flask import Flask, request
+from fructify.tracing import with_flask_tracing, requests
 
 
 GCAL_DATETIME_FORMAT = "%B %d, %Y at %I:%M%p"
 TRELLO_USERS_TO_NAMES = {"@fffergal": "Fergal", "@annaarmstrong11": "Anna"}
 
+app = with_flask_tracing(Flask(__name__))
 
-@with_tracing
-def app(environ, start_response):
-    if environ["REQUEST_METHOD"] != "POST":
-        start_response("405 Method not allowed", [("Content-type", "text/plain")])
-        return ["POST only please"]
-    with contextlib.closing(environ["wsgi.input"]) as request_body_file:
-        request_body = request_body_file.read(int(environ["CONTENT_LENGTH"]))
-    parsed_request = json.loads(request_body)
+
+@app.route("/api/v1/cleaning_from_gcal", methods=["POST"])
+def cleaning_from_gcal():
+    parsed_request = request.json
     gcal_datetime = parsed_request["datetime"]
     title = parsed_request["title"]
     trello_user = parsed_request["description"]
     parsed_datetime = datetime.datetime.strptime(gcal_datetime, GCAL_DATETIME_FORMAT)
     name = TRELLO_USERS_TO_NAMES.get(trello_user, "Someone")
     ifttt_key = os.environ["IFTTT_KEY"]
-    telegram_request = urllib.request.Request(
+    telegram_response = requests.get(
         f"https://maker.ifttt.com/trigger/telegram_afb/with/key/{ifttt_key}",
-        bytes(
-            json.dumps({"value1": "{name}: {title}".format(name=name, title=title)}),
-            "utf-8",
-        ),
-        {"Content-type": "application/json"},
+        data={"value1": "{name}: {title}".format(name=name, title=title)},
     )
-    with contextlib.closing(urllib.request.urlopen(telegram_request)) as response:
-        lines = list(response.readlines())
-    trello_request = urllib.request.Request(
+    telegram_response.raise_for_status()
+    trello_response = requests.get(
         f"https://maker.ifttt.com/trigger/add_cleaning_trello/with/key/{ifttt_key}",
-        bytes(
-            json.dumps(
-                {
-                    "value1": "{title} ({parsed_datetime:%a %d %b})".format(
-                        title=title, parsed_datetime=parsed_datetime
-                    ),
-                    "value2": trello_user,
-                }
+        data={
+            "value1": "{title} ({parsed_datetime:%a %d %b})".format(
+                title=title, parsed_datetime=parsed_datetime
             ),
-            "utf-8",
-        ),
-        {"Content-type": "application/json"},
+            "value2": trello_user,
+        },
     )
-    with contextlib.closing(urllib.request.urlopen(trello_request)) as response:
-        lines.extend(response.readlines())
-    start_response("200 OK", [("Content-type", "text/plain")])
-    return lines
+    trello_response.raise_for_status()
+    return "\n".join(
+        line
+        for response in [telegram_response, trello_response]
+        for line in response.iter_lines(decode_unicode=True)
+    )

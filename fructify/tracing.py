@@ -7,6 +7,11 @@ import traceback
 import beeline
 from beeline.middleware.bottle import HoneyWSGIMiddleware
 from beeline.middleware.flask import HoneyMiddleware
+from beeline.patch import requests
+import requests  # noqa
+
+
+__all__ = ["with_flask_tracing", "requests"]
 
 
 def with_tracing(app):
