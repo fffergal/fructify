@@ -41,3 +41,7 @@ def presend(fields):
         fields["request.url"] = fields["request.url"].replace(
             os.environ["IFTTT_KEY"], "<ifttt_key>"
         )
+    if os.environ["TELEGRAM_KEY"] in fields.get("request.url", ""):
+        fields["request.url"] = fields["request.url"].replace(
+            os.environ["TELEGRAM_KEY"], "<telegram_key>"
+        )

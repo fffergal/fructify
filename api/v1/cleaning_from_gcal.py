@@ -20,11 +20,16 @@ def cleaning_from_gcal():
     parsed_datetime = datetime.datetime.strptime(gcal_datetime, GCAL_DATETIME_FORMAT)
     name = TRELLO_USERS_TO_NAMES.get(trello_user, "Someone")
     ifttt_key = os.environ["IFTTT_KEY"]
+    telegram_key = os.environ["TELEGRAM_KEY"]
+    telegram_chat_id = int(os.environ["TELEGRAM_CHAT_ID"])
     telegram_response = requests.get(
-        f"https://maker.ifttt.com/trigger/telegram_afb/with/key/{ifttt_key}",
-        data={"value1": "{name}: {title}".format(name=name, title=title)},
+        f"https://api.telegram.org/bot{telegram_key}/sendMessage",
+        data={
+            "chat_id": telegram_chat_id,
+            "text": "{name}: {title}".format(name=name, title=title),
+        },
     )
-    telegram_response.raise_for_status()
+    assert telegram_response.json()["ok"]
     trello_response = requests.get(
         f"https://maker.ifttt.com/trigger/add_cleaning_trello/with/key/{ifttt_key}",
         data={
@@ -35,8 +40,7 @@ def cleaning_from_gcal():
         },
     )
     trello_response.raise_for_status()
-    return "\n".join(
-        line
-        for response in [telegram_response, trello_response]
-        for line in response.iter_lines(decode_unicode=True)
-    )
+    return {
+        "telegram_response": telegram_response.json(),
+        "ifttt_trello_response": trello_response.text,
+    }

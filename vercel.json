@@ -1,6 +1,8 @@
 {
   "env": {
     "IFTTT_KEY": "@ifttt_key",
-    "HONEYCOMB_KEY": "@honeycomb_key"
+    "HONEYCOMB_KEY": "@honeycomb_key",
+    "TELEGRAM_KEY": "@telegram_key",
+    "TELEGRAM_CHAT_ID": "@telegram_chat_id"
   }
 }
