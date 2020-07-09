@@ -3,6 +3,10 @@
     "IFTTT_KEY": "@ifttt_key",
     "HONEYCOMB_KEY": "@honeycomb_key",
     "TELEGRAM_KEY": "@telegram_key",
-    "TELEGRAM_CHAT_ID": "@telegram_chat_id"
+    "TELEGRAM_CHAT_ID": "@telegram_chat_id",
+    "AUTH0_DOMAIN": "@auth0_domain",
+    "AUTH0_CLIENT_ID": "@auth0_client_id",
+    "AUTH0_CLIENT_SECRET": "@auth0_client_secret",
+    "FLASK_SECRET_KEY": "@flask_secret_key"
   }
 }
