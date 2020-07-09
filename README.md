@@ -26,9 +26,10 @@ pip install -r dev-requirements.txt
 pip-sync dev-requirements.txt requirements.txt
 ```
 
-Each .py file in the api directory is an endpoint. Each module defines a WSGI
-application called app. Decorate the app with `fructify.tracing.with_tracing` to
-instrument it.
+Each .py file in the api directory is an endpoint. Each module defines a Flask
+application called app. Use `fructify.tracing.with_flask_tracing` on the app to
+instrument it. The app must have one route which matches the path of the file,
+e.g. `api/v1/debug.py` has a route for `/api/v1/debug`.
 
 Run tests with `tox`. Lint code with `flake8`. Format code with `black .`.
 
