@@ -11,10 +11,22 @@ def set_secret_key(app):
         assert app.config["SECRET_KEY"] == os.environ["FLASK_SECRET_KEY"]
 
 
-def add_auth0(app):
-    """Add auth0 handling to a Flask app and return the registered auth0 object."""
+def add_oauth(app):
+    """
+    Add authlib OAuth to an app and return the OAuth object.
+
+    Also sets the Flask secret key for sessions.
+    """
     set_secret_key(app)
-    oauth = OAuth(app)
+    return OAuth(app)
+
+
+def add_auth0(oauth):
+    """
+    Add auth0 handling to an OAuth object and return the registered auth0 object.
+
+    You can get an OAuth object by passing a Flask app to add_oauth.
+    """
     auth0_domain = os.environ["AUTH0_DOMAIN"]
     return oauth.register(
         "auth0",
@@ -24,4 +36,32 @@ def add_auth0(app):
         access_token_url=f"https://{auth0_domain}/oauth/token",
         authorize_url=f"https://{auth0_domain}/authorize",
         client_kwargs={"scope": "openid profile email"},
+    )
+
+
+def add_google(oauth):
+    """
+    Add google handling to an OAuth object and return the registered google object.
+
+    You can get an OAuth object by passing a Flask app to add_oauth.
+    """
+    return oauth.register(
+        "google",
+        client_id=os.environ["GOOGLE_CLIENT_ID"],
+        client_secret=os.environ["GOOGLE_CLIENT_SECRET"],
+        authorize_url="https://accounts.google.com/o/oauth2/v2/auth",
+        access_token_url="https://oauth2.googleapis.com/token",
+        server_metadata_url=(
+            "https://accounts.google.com/.well-known/openid-configuration"
+        ),
+        client_kwargs={
+            "scope": " ".join(
+                [
+                    "openid",
+                    "profile",
+                    "email",
+                    "https://www.googleapis.com/auth/calendar.events.readonly",
+                ]
+            )
+        },
     )
