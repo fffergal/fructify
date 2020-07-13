@@ -18,10 +18,11 @@ itsdangerous==1.1.0       # via flask
 jinja2==2.11.2            # via flask
 libhoney==1.9.0           # via honeycomb-beeline
 markupsafe==1.1.1         # via jinja2
+psycopg2-binary==2.8.5    # via fructify (setup.py)
 pycparser==2.20           # via cffi
 requests==2.23.0          # via fructify (setup.py), libhoney
 six==1.14.0               # via cryptography, libhoney
 statsd==3.3.0             # via libhoney
 urllib3==1.25.8           # via requests
 werkzeug==1.0.1           # via flask
-wrapt==1.12.1             # via honeycomb-beeline
+wrapt==1.12.1             # via fructify (setup.py), honeycomb-beeline

@@ -54,6 +54,7 @@ def add_google(oauth):
         server_metadata_url=(
             "https://accounts.google.com/.well-known/openid-configuration"
         ),
+        authorize_params={"access_type": "offline"},
         client_kwargs={
             "scope": " ".join(
                 [
@@ -62,6 +63,7 @@ def add_google(oauth):
                     "email",
                     "https://www.googleapis.com/auth/calendar.events.readonly",
                 ]
-            )
+            ),
+            "prompt": "consent",
         },
     )
