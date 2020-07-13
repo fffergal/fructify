@@ -2,8 +2,9 @@ import datetime
 import os
 
 from flask import Flask, request
+import requests
 
-from fructify.tracing import with_flask_tracing, requests
+from fructify.tracing import with_flask_tracing
 
 
 app = with_flask_tracing(Flask(__name__))

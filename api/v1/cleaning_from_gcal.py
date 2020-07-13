@@ -1,8 +1,10 @@
 import datetime
 import os
 
+import requests
+
 from flask import Flask, request
-from fructify.tracing import with_flask_tracing, requests
+from fructify.tracing import with_flask_tracing
 
 
 GCAL_DATETIME_FORMAT = "%B %d, %Y at %I:%M%p"

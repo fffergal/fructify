@@ -1,12 +1,8 @@
 import os
 
 from beeline.middleware.flask import HoneyMiddleware
-from beeline.patch import requests
+from beeline.patch import requests  # noqa
 import beeline
-import requests  # noqa
-
-
-__all__ = ["with_flask_tracing", "requests"]
 
 
 def with_flask_tracing(app):
