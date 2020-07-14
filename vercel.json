@@ -10,6 +10,7 @@
     "FLASK_SECRET_KEY": "@flask_secret_key",
     "GOOGLE_CLIENT_ID": "@google_client_id",
     "GOOGLE_CLIENT_SECRET": "@google_client_secret",
-    "POSTGRES_DSN": "@postgres_dsn"
+    "POSTGRES_DSN": "@postgres_dsn",
+    "TELEGRAM_BOT_WEBHOOK_TOKEN": "@telegram_bot_webhook_token"
   }
 }
