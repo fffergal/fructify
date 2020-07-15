@@ -43,6 +43,10 @@ def presend(fields):
         fields["request.url"] = fields["request.url"].replace(
             os.environ["TELEGRAM_KEY"], "<telegram_key>"
         )
+    if os.environ["TELEGRAM_BOT_WEBHOOK_TOKEN"] in fields.get("request.url", ""):
+        fields["request.url"] = fields["request.url"].replace(
+            os.environ["TELEGRAM_BOT_WEBHOOK_TOKEN"], "<telegram_bot_webhook_token>"
+        )
 
 
 @contextmanager
