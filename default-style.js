@@ -1,0 +1,20 @@
+export default function DefaultStyle() {
+  return (
+    <style jsx>{`
+      * {box-sizing: border-box}
+      [hidden] {display: none !important}
+      [disabled] {pointer-events:none; opacity: 0.3}
+      .horizontal {display: flex; flex-direction: row; justify-content: space-between}
+      .vertical {display: flex; flex-direction: column}
+      .center {justify-content: center; align-items: center}
+      .flex {flex: 1}
+      html {
+        --spacing-xs: 8px;
+        --spacing: 24px;
+        --spacing-s: 12px;
+        --spacing-m: 36px;
+        font-family: sans-serif;
+      }
+    `}</style>
+  )
+}

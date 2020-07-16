@@ -16,4 +16,4 @@ def auth0callback():
     session["profile"] = {
         "user_id": userinfo["sub"],
     }
-    return redirect("/dashboard.html")
+    return redirect("/dashboard")

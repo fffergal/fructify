@@ -46,7 +46,7 @@ def googlecallback():
                         trace_call("update google link query")(cursor.execute)(
                             """
                             UPDATE
-                                google
+                                link
                             SET
                                 issuer_sub = %s
                             WHERE
@@ -97,4 +97,4 @@ def googlecallback():
                         )
         finally:
             connection.close()
-    return redirect("/dashboard.html")
+    return redirect("/dashboard")

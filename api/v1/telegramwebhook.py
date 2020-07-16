@@ -56,7 +56,7 @@ def telegramwebhook():
                                             Could not link this group to your
                                             Fructify account. Please go to [your
                                             Fructify
-                                            dashboard]({request.base_url}dashboard.html)
+                                            dashboard]({request.base_url}dashboard)
                                             to link a Telegram group to your account.
                                             """
                                         ),
