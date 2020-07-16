@@ -2,8 +2,9 @@ import Head from "next/head"
 import useSwr from "swr"
 
 import DefaultStyle from "../default-style"
+import fetcher from "../fetcher"
+import LoggedIn from "../logged-in"
 
-const fetcher = (...args) => fetch(...args).then(res => res.json())
 
 const TelegramLink = () => {
   const {data: deeplinkData, error: deeplinkError} = useSwr(
@@ -28,8 +29,11 @@ export default function Dashboard() {
       </Head>
       <div className="vertical">
         <h1>Fructify Dashboard</h1>
-        <TelegramLink/>
-        <p><a href="/api/v1/googlelink">Link Google account</a></p>
+        <LoggedIn>
+          <TelegramLink/>
+          <p><a href="/api/v1/googlelink">Link Google account</a></p>
+          <p><a href="/api/v1/logout">Log out</a></p>
+        </LoggedIn>
       </div>
       <DefaultStyle/>
     </div>

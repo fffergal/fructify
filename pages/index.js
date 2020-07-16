@@ -1,6 +1,7 @@
 import Head from "next/head"
 
 import DefaultStyle from '../default-style'
+import LoggedIn from "../logged-in"
 
 export default function Index() {
   return (
@@ -11,7 +12,9 @@ export default function Index() {
       <div className="horizontal center">
         <div className="vertical">
           <h1>Fructify</h1>
-          <p><a href="/api/v1/login">Log in</a></p>
+          <LoggedIn>
+            <p><a href="/dashboard">Go to dashboard</a></p>
+          </LoggedIn>
           <p>Make yourself more fruitful.</p>
         </div>
       </div>

@@ -9,4 +9,4 @@ set_secret_key(app)
 
 @app.route("/api/v1/authcheck")
 def authcheck():
-    return {"userinfo": session["profile"]}
+    return {"loggedIn": bool(session.get("profile", {}).get("user_id"))}
