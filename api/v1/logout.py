@@ -15,7 +15,7 @@ auth0 = add_auth0(oauth)
 def logout():
     session.clear()
     params = {
-        "returnTo": f"{request.url_root}api/v1/login",
+        "returnTo": f"{request.url_root}",
         "client_id": os.environ["AUTH0_CLIENT_ID"],
     }
     return redirect(auth0.api_base_url + "/v2/logout?" + urlencode(params))
