@@ -9,15 +9,11 @@ export default function Index() {
       <Head>
         <title>Fructify</title>
       </Head>
-      <div className="horizontal center">
-        <div className="vertical">
-          <h1>Fructify</h1>
-          <LoggedIn>
-            <p><a href="/dashboard">Go to dashboard</a></p>
-          </LoggedIn>
-          <p>Make yourself more fruitful.</p>
-        </div>
-      </div>
+      <h1>Fructify</h1>
+      <LoggedIn>
+        <p><a href="/dashboard">Go to dashboard</a></p>
+      </LoggedIn>
+      <p>Make yourself more fruitful.</p>
       <DefaultStyle/>
     </div>
   )

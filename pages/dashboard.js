@@ -41,19 +41,17 @@ const TelegramGroups = () => {
 
 export default function Dashboard() {
   return (
-    <div className="horizontal center">
+    <div>
       <Head>
         <title>Fructify Dashboard</title>
       </Head>
-      <div className="vertical">
-        <h1>Fructify Dashboard</h1>
-        <LoggedIn>
-          <TelegramLink/>
-          <p><a href="/api/v1/googlelink">Link Google account</a></p>
-          <TelegramGroups/>
-          <p><a href="/api/v1/logout">Log out</a></p>
-        </LoggedIn>
-      </div>
+      <h1>Fructify Dashboard</h1>
+      <LoggedIn>
+        <TelegramLink/>
+        <p><a href="/api/v1/googlelink">Link Google account</a></p>
+        <TelegramGroups/>
+        <p><a href="/api/v1/logout">Log out</a></p>
+      </LoggedIn>
       <DefaultStyle/>
     </div>
   )
