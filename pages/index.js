@@ -1,6 +1,6 @@
 import Head from "next/head"
 
-import DefaultStyle from '../default-style'
+import DefaultStyle from "../default-style"
 import LoggedIn from "../logged-in"
 
 export default function Index() {

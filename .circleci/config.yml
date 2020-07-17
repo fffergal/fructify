@@ -1,7 +1,7 @@
 ---
 version: 2
 jobs:
-  test:
+  test_python:
     docker:
       - image: circleci/python:3.6
     steps:
@@ -13,8 +13,16 @@ jobs:
       - run: pip-compile
       - run: pip-compile dev-requirements.in
       - run: git diff --exit-code -- dev-requirements.txt requirements.txt
+  test_javascript:
+    docker:
+      - image: circleci/node:12
+    steps:
+      - checkout
+      - run: npm ci
+      - run: npx eslint .
 workflows:
   version: 2
   test:
     jobs:
-      - test
+      - test_python
+      - test_javascript
