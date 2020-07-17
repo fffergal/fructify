@@ -39,6 +39,46 @@ const TelegramGroups = () => {
   )
 }
 
+const GoogleLink = () => {
+  const {data, error} = useSwr("/api/v1/googlecheck", fetcher)
+  if (error) {
+    return <p>Error checking Google link</p>
+  }
+  if (!data) {
+    return <p>Checking Google link...</p>
+  }
+  let action
+  if (data.hasGoogle) {
+    action = "Change"
+  }
+  else {
+    action = "Link"
+  }
+  return <p><a href="/api/v1/googlelink">{action} Google account</a></p>
+}
+
+
+
+const GoogleCalendars = () => {
+  const {data, error} = useSwr("/api/v1/googlecalendars", fetcher)
+  if (error) {
+    return <p>Error getting Google calendars</p>
+  }
+  if (!data) {
+    return <p>Loading Google calendars...</p>
+  }
+  return (
+    <div>
+      <p>Google calendars:</p>
+      <ul>
+        {data.googleCalendars.map(
+          ({id, summary}) => <li key={id}>{summary}</li>
+        )}
+      </ul>
+    </div>
+  )
+}
+
 export default function Dashboard() {
   return (
     <div>
@@ -48,8 +88,9 @@ export default function Dashboard() {
       <h1>Fructify Dashboard</h1>
       <LoggedIn>
         <TelegramLink/>
-        <p><a href="/api/v1/googlelink">Link Google account</a></p>
         <TelegramGroups/>
+        <GoogleLink/>
+        <GoogleCalendars/>
         <p><a href="/api/v1/logout">Log out</a></p>
       </LoggedIn>
       <DefaultStyle/>
