@@ -15,7 +15,7 @@ set_secret_key(app)
 
 
 @app.route("/api/v1/telegramdeeplink")
-def telgramdeeplink():
+def telegramdeeplink():
     sub = session.get("profile", {}).get("user_id")
     assert sub
     with beeline.tracer("db connection"):

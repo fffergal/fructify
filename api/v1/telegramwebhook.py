@@ -109,9 +109,65 @@ def telegramwebhook():
                                     INSERT INTO
                                         link (sub, link_name, issuer_sub)
                                     VALUES
-                                        (%s, 'telgram', %s)
+                                        (%s, 'telegram', %s)
                                     """,
-                                    (sub, chat_id),
+                                    (sub, str(chat_id)),
+                                )
+                with trace_cm(connection, "telegram table exists transaction"):
+                    with trace_cm(connection.cursor(), "cursor") as cursor:
+                        with beeline.tracer("telegram table exists query"):
+                            cursor.execute(
+                                """
+                                SELECT
+                                    table_name
+                                FROM
+                                    information_schema.tables
+                                WHERE
+                                    table_name = 'telegram'
+                                """
+                            )
+                        if not cursor.rowcount:
+                            with beeline.tracer("create telegram table query"):
+                                cursor.execute(
+                                    """
+                                    CREATE TABLE
+                                        telegram (issuer_sub text, chat_title text)
+                                    """
+                                )
+                with trace_cm(connection, "save telegram transaction"):
+                    with trace_cm(connection.cursor(), "cursor") as cursor:
+                        with beeline.tracer("telegram exists query"):
+                            cursor.execute(
+                                "SELECT issuer_sub FROM telegram WHERE issuer_sub = %s",
+                                (str(chat_id),),
+                            )
+                        chat_title = request.json["message"]["chat"]["title"]
+                        if cursor.rowcount:
+                            with beeline.tracer("update telegram query"):
+                                cursor.execute(
+                                    """
+                                    UPDATE
+                                        telegram
+                                    SET
+                                        chat_title = %s
+                                    WHERE
+                                        issuer_sub = %s
+                                    """,
+                                    (chat_title, str(chat_id)),
+                                )
+                        else:
+                            with beeline.tracer("insert telegram query"):
+                                cursor.execute(
+                                    """
+                                    INSERT INTO
+                                        telegram (
+                                            issuer_sub,
+                                            chat_title
+                                        )
+                                    VALUES
+                                        (%s, %s)
+                                    """,
+                                    (str(chat_id), chat_title),
                                 )
                 with trace_cm(connection, "delete secret transaction"):
                     with trace_cm(connection.cursor(), "cursor") as cursor:
