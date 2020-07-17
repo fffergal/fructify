@@ -61,6 +61,7 @@ def add_google(oauth):
                     "openid",
                     "profile",
                     "email",
+                    "https://www.googleapis.com/auth/calendar.readonly",
                     "https://www.googleapis.com/auth/calendar.events.readonly",
                 ]
             ),
