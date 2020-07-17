@@ -13,12 +13,30 @@ const TelegramLink = () => {
   if (deeplinkError) {
     return <p>Error making Telegram deeplink</p>
   }
-  else if (!deeplinkData) {
+  if (!deeplinkData) {
     return <p>Loading Telegram deeplink...</p>
   }
-  else {
-    return <p><a href={deeplinkData.deeplinkUrl}>Add Telegram group</a></p>
+  return <p><a href={deeplinkData.deeplinkUrl}>Add Telegram group</a></p>
+}
+
+const TelegramGroups = () => {
+  const {data, error} = useSwr("/api/v1/telegramchats", fetcher)
+  if (error) {
+    return <p>Error getting Telegram groups</p>
   }
+  if (!data) {
+    return <p>Loading Telegram groups...</p>
+  }
+  return (
+    <div>
+      <p>Linked Telegram groups:</p>
+      <ul>
+        {data.telegramGroups.map(
+          ({chatTitle, issuerSub}) => <li key={issuerSub}>{chatTitle}</li>
+        )}
+      </ul>
+    </div>
+  )
 }
 
 export default function Dashboard() {
@@ -32,6 +50,7 @@ export default function Dashboard() {
         <LoggedIn>
           <TelegramLink/>
           <p><a href="/api/v1/googlelink">Link Google account</a></p>
+          <TelegramGroups/>
           <p><a href="/api/v1/logout">Log out</a></p>
         </LoggedIn>
       </div>
