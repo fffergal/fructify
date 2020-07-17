@@ -35,18 +35,15 @@ with_flask_tracing.beeline_inited = False
 
 
 def presend(fields):
-    if os.environ["IFTTT_KEY"] in fields.get("request.url", ""):
-        fields["request.url"] = fields["request.url"].replace(
-            os.environ["IFTTT_KEY"], "<ifttt_key>"
-        )
-    if os.environ["TELEGRAM_KEY"] in fields.get("request.url", ""):
-        fields["request.url"] = fields["request.url"].replace(
-            os.environ["TELEGRAM_KEY"], "<telegram_key>"
-        )
-    if os.environ["TELEGRAM_BOT_WEBHOOK_TOKEN"] in fields.get("request.url", ""):
-        fields["request.url"] = fields["request.url"].replace(
-            os.environ["TELEGRAM_BOT_WEBHOOK_TOKEN"], "<telegram_bot_webhook_token>"
-        )
+    sensitives = {
+        key: value
+        for key, value in os.environ.items()
+        if key.upper().endswith(("KEY", "TOKEN"))
+    }
+    for key in fields:
+        if type(fields[key]) is str:
+            for sensitive_key, sensitive in sensitives.items():
+                fields[key] = fields[key].replace(sensitive, f"<{sensitive_key}>")
 
 
 @contextmanager
