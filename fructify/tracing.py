@@ -3,6 +3,7 @@ import os
 
 from beeline.middleware.flask import HoneyMiddleware
 from beeline.patch import requests  # noqa
+from flask import request
 import beeline
 import wrapt
 
@@ -35,6 +36,7 @@ with_flask_tracing.beeline_inited = False
 
 
 def presend(fields):
+    """Mutate fields, removing sensitive values and adding global fields."""
     sensitives = {
         key: value
         for key, value in os.environ.items()
@@ -44,6 +46,11 @@ def presend(fields):
         if type(fields[key]) is str:
             for sensitive_key, sensitive in sensitives.items():
                 fields[key] = fields[key].replace(sensitive, f"<{sensitive_key}>")
+    for global_field in ["NOW_REGION", "VERCEL_REGION", "VERCEL_GITHUB_COMMIT_SHA"]:
+        if global_field in os.environ:
+            fields[global_field] = os.environ[global_field]
+    if "x-vercel-id" in request.headers:
+        fields["vercel_id"] = request.headers["x-vercel-id"]
 
 
 @contextmanager
