@@ -1,18 +1,16 @@
 import os
 
-from flask import Flask, session
+from flask import Blueprint, session
 import beeline
 import psycopg2
 
-from fructify.auth import set_secret_key
-from fructify.tracing import trace_cm, with_flask_tracing
+from fructify.tracing import trace_cm
 
 
-app = with_flask_tracing(Flask(__name__))
-set_secret_key(app)
+bp = Blueprint("telegramchats", __name__)
 
 
-@app.route("/api/v1/telegramchats")
+@bp.route("/api/v1/telegramchats")
 def telegramchats():
     sub = session.get("profile", {}).get("user_id")
     assert sub

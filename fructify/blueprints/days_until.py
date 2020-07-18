@@ -1,16 +1,14 @@
 import datetime
 import os
 
-from flask import Flask, request
+from flask import Blueprint, request
 import requests
 
-from fructify.tracing import with_flask_tracing
+
+bp = Blueprint("days_until", __name__)
 
 
-app = with_flask_tracing(Flask(__name__))
-
-
-@app.route("/api/v1/days_until", methods=["POST"])
+@bp.route("/api/v1/days_until", methods=["POST"])
 def days_until_route():
     parsed_request = request.json
     from_date = parsed_request["from_date"]

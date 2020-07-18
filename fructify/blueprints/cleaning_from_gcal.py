@@ -1,19 +1,17 @@
 import datetime
 import os
 
+from flask import Blueprint, request
 import requests
-
-from flask import Flask, request
-from fructify.tracing import with_flask_tracing
 
 
 GCAL_DATETIME_FORMAT = "%B %d, %Y at %I:%M%p"
 TRELLO_USERS_TO_NAMES = {"@fffergal": "Fergal", "@annaarmstrong11": "Anna"}
 
-app = with_flask_tracing(Flask(__name__))
+bp = Blueprint("cleaning_from_gcal", __name__)
 
 
-@app.route("/api/v1/cleaning_from_gcal", methods=["POST"])
+@bp.route("/api/v1/cleaning_from_gcal", methods=["POST"])
 def cleaning_from_gcal():
     parsed_request = request.json
     gcal_datetime = parsed_request["datetime"]

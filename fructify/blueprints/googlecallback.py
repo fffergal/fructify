@@ -4,20 +4,18 @@ import os
 import beeline
 import psycopg2
 
-from flask import Flask, redirect, session
-from fructify.auth import add_google, add_oauth
-from fructify.tracing import with_flask_tracing, trace_call, trace_cm
+from flask import Blueprint, redirect, session
+from fructify.auth import oauth
+from fructify.tracing import trace_call, trace_cm
 
 
-app = with_flask_tracing(Flask(__name__))
-oauth = add_oauth(app)
-google = add_google(oauth)
+bp = Blueprint("googlecallback", __name__)
 
 
-@app.route("/api/v1/googlecallback")
+@bp.route("/api/v1/googlecallback")
 def googlecallback():
-    token = google.authorize_access_token()
-    userinfo = google.parse_id_token(token)
+    token = oauth.google.authorize_access_token()
+    userinfo = oauth.google.parse_id_token(token)
     with beeline.tracer("db connection"):
         with beeline.tracer("open db connection"):
             connection = psycopg2.connect(os.environ["POSTGRES_DSN"])

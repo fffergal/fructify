@@ -2,19 +2,17 @@ import datetime
 import os
 import secrets
 
-from flask import Flask, session
+from flask import Blueprint, session
 import beeline
 import psycopg2
 
-from fructify.auth import set_secret_key
-from fructify.tracing import with_flask_tracing, trace_cm
+from fructify.tracing import trace_cm
 
 
-app = with_flask_tracing(Flask(__name__))
-set_secret_key(app)
+bp = Blueprint("telegramdeeplink", __name__)
 
 
-@app.route("/api/v1/telegramdeeplink")
+@bp.route("/api/v1/telegramdeeplink")
 def telegramdeeplink():
     sub = session.get("profile", {}).get("user_id")
     assert sub

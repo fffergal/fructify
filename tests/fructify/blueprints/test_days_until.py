@@ -1,7 +1,7 @@
 import datetime
 import unittest
 
-from api.v1 import days_until
+from fructify.blueprints import days_until
 
 
 class DaysUntilTestCase(unittest.TestCase):

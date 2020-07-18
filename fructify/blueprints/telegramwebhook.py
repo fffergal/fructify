@@ -2,18 +2,18 @@ import datetime
 from inspect import cleandoc
 import os
 
-from flask import Flask, request
+from flask import Blueprint, request
 import beeline
 import psycopg2
 import requests
 
-from fructify.tracing import trace_cm, with_flask_tracing
+from fructify.tracing import trace_cm
 
 
-app = with_flask_tracing(Flask(__name__))
+bp = Blueprint("telegramwebhook", __name__)
 
 
-@app.route("/api/v1/telegramwebhook", methods=["POST"])
+@bp.route("/api/v1/telegramwebhook", methods=["POST"])
 def telegramwebhook():
     if not request.json.get("message"):
         return ("", 204)

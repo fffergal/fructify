@@ -13,5 +13,11 @@
     "POSTGRES_DSN": "@postgres_dsn",
     "TELEGRAM_BOT_WEBHOOK_TOKEN": "@telegram_bot_webhook_token",
     "TELEGRAM_BOT_NAME": "@telegram_bot_name"
-  }
+  },
+  "regions": [
+    "dub1"
+  ],
+  "rewrites": [
+    {"source": "/api/(.*)", "destination": "/api/index.py"}
+  ]
 }
