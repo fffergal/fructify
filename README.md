@@ -27,7 +27,7 @@ pip-sync dev-requirements.txt requirements.txt
 ```
 
 Vercel can make a separate Lambda for every file in the api directory, but this
-project uses a singple Flask app in api/index.py imported from the fructify
+project uses a single Flask app in api/index.py imported from the fructify
 package.
 
 Run tests with `tox`. Lint code with `flake8`. Format code with `black .`.
