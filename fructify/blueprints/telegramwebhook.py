@@ -1,5 +1,4 @@
 import datetime
-from inspect import cleandoc
 import os
 
 from flask import Blueprint, request
@@ -7,6 +6,7 @@ import beeline
 import psycopg2
 import requests
 
+from fructify.help import unwrap_heredoc
 from fructify.tracing import trace_cm
 
 
@@ -51,16 +51,16 @@ def telegramwebhook():
                                     send_message_url,
                                     data={
                                         "chat_id": chat_id,
-                                        "text": cleandoc(
-                                            """
-                                            Could not link this group to your
-                                            Fructify account. Please go to [your
-                                            Fructify
-                                            dashboard]({request.base_url}dashboard)
-                                            to link a Telegram group to your account.
+                                        "text": unwrap_heredoc(
+                                            f"""
+                                            Could not link this group to your Fructify
+                                            account. Please go to <a
+                                            href="{request.base_url}/dashboard">your
+                                            Fructify dashboard</a> to link a Telegram
+                                            group to your account.
                                             """
                                         ),
-                                        "parse_mode": "MarkdownV2",
+                                        "parse_mode": "HTML",
                                     },
                                 )
                                 telegram_response.raise_for_status()
