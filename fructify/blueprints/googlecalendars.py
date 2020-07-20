@@ -16,5 +16,6 @@ def googlecalendars():
         "googleCalendars": [
             {"id": calendar["id"], "summary": calendar["summary"]}
             for calendar in response.json()["items"]
+            if calendar["accessRole"] == "owner"
         ]
     }
