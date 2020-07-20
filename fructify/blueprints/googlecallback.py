@@ -1,11 +1,10 @@
-import json
 import os
 
 import beeline
 import psycopg2
 
 from flask import Blueprint, redirect, session
-from fructify.auth import oauth
+from fructify.auth import oauth, update_google_token
 from fructify.tracing import trace_call, trace_cm
 
 
@@ -15,6 +14,7 @@ bp = Blueprint("googlecallback", __name__)
 @bp.route("/api/v1/googlecallback")
 def googlecallback():
     token = oauth.google.authorize_access_token()
+    update_google_token(token)
     userinfo = oauth.google.parse_id_token(token)
     with beeline.tracer("db connection"):
         with beeline.tracer("open db connection"):
@@ -62,36 +62,6 @@ def googlecallback():
                                 (%s, 'google', %s)
                             """,
                             (session["profile"]["user_id"], userinfo["sub"]),
-                        )
-            with trace_cm(connection, "google table maint transaction"):
-                with trace_cm(
-                    connection.cursor(), "google table maint cursor"
-                ) as cursor:
-                    with beeline.tracer("google table exists query"):
-                        cursor.execute(
-                            "SELECT table_name FROM information_schema.tables"
-                        )
-                    if ("google",) not in list(cursor):
-                        trace_call("google table create query")(cursor.execute)(
-                            "CREATE TABLE google (issuer_sub text, token text)"
-                        )
-            with trace_cm(connection, "save google token transaction"):
-                with trace_cm(
-                    connection.cursor(), "save google token cursor"
-                ) as cursor:
-                    trace_call("google token exists query")(cursor.execute)(
-                        "SELECT issuer_sub FROM google WHERE issuer_sub = %s",
-                        (userinfo["sub"],),
-                    )
-                    if cursor.rowcount:
-                        trace_call("update google token query")(cursor.execute)(
-                            "UPDATE google SET token = %s WHERE issuer_sub = %s",
-                            (json.dumps(token), userinfo["sub"]),
-                        )
-                    else:
-                        trace_call("insert google token query")(cursor.execute)(
-                            "INSERT INTO google (issuer_sub, token) VALUES (%s, %s)",
-                            (userinfo["sub"], json.dumps(token)),
                         )
         finally:
             connection.close()
