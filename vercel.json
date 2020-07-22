@@ -12,7 +12,8 @@
     "GOOGLE_CLIENT_SECRET": "@google_client_secret",
     "POSTGRES_DSN": "@postgres_dsn",
     "TELEGRAM_BOT_WEBHOOK_TOKEN": "@telegram_bot_webhook_token",
-    "TELEGRAM_BOT_NAME": "@telegram_bot_name"
+    "TELEGRAM_BOT_NAME": "@telegram_bot_name",
+    "EASYCRON_KEY": "@easycron_key"
   },
   "regions": [
     "dub1"
