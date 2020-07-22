@@ -20,11 +20,6 @@ export default function LoggedIn({children}) {
     </div>
   )
 }
-
-const oneOrMoreElements = PropTypes.oneOfType([
-  PropTypes.element, PropTypes.arrayOf(PropTypes.element)
-])
-
 LoggedIn.propTypes = {
-  children: oneOrMoreElements.isRequired
+  children: PropTypes.element.isRequired
 }

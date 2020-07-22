@@ -1,4 +1,6 @@
 import Head from "next/head"
+import PropTypes from "prop-types"
+import React from "react"
 import useSwr from "swr"
 
 import DefaultStyle from "../default-style"
@@ -19,24 +21,28 @@ const TelegramLink = () => {
   return <p><a href={deeplinkData.deeplinkUrl}>Add Telegram group</a></p>
 }
 
-const TelegramGroups = () => {
+const TelegramGroups = ({selectId}) => {
   const {data, error} = useSwr("/api/v1/telegramchats", fetcher)
   if (error) {
-    return <p>Error getting Telegram groups</p>
+    return (
+      <select><option disabled>Error getting Telegram groups</option></select>
+    )
   }
   if (!data) {
-    return <p>Loading Telegram groups...</p>
+    return <select><option disabled>Loading Telegram groups...</option></select>
   }
   return (
-    <div>
-      <p>Linked Telegram groups:</p>
-      <ul>
-        {data.telegramGroups.map(
-          ({chatTitle, issuerSub}) => <li key={issuerSub}>{chatTitle}</li>
-        )}
-      </ul>
-    </div>
+    <select id={selectId}>
+      {data.telegramGroups.map(
+        ({chatTitle, issuerSub}) => (
+          <option key={issuerSub} value={issuerSub}>{chatTitle}</option>
+        )
+      )}
+    </select>
   )
+}
+TelegramGroups.propTypes = {
+  selectId: PropTypes.string,
 }
 
 const GoogleLink = () => {
@@ -59,23 +65,97 @@ const GoogleLink = () => {
 
 
 
-const GoogleCalendars = () => {
+const GoogleCalendars = ({selectId}) => {
   const {data, error} = useSwr("/api/v1/googlecalendars", fetcher)
   if (error) {
-    return <p>Error getting Google calendars</p>
+    return <select><option>Error getting Google calendars</option></select>
   }
   if (!data) {
-    return <p>Loading Google calendars...</p>
+    return <select><option disabled>Loading Google calendars...</option></select>
   }
   return (
-    <div>
-      <p>Google calendars:</p>
-      <ul>
-        {data.googleCalendars.map(
-          ({id, summary}) => <li key={id}>{summary}</li>
-        )}
-      </ul>
-    </div>
+    <select id={selectId}>
+      {data.googleCalendars.map(
+        ({id, summary}) => <option key={id} value={id}>{summary}</option>
+      )}
+    </select>
+  )
+}
+GoogleCalendars.propTypes = {
+  selectId: PropTypes.string,
+}
+
+class NewLink extends React.Component {
+  constructor() {
+    super()
+    this.state = {"buttonText": "Link", "error": false}
+  }
+
+  render() {
+    const submit = async () => {
+      this.setState({"buttonText": "Linking...", "error": false})
+      const calendarId = document.getElementById("calendars").value
+      const chatId = document.getElementById("chats").value
+      try {
+        const response = await fetch(
+          "/api/v1/googletelegramlinks",
+          {
+            method: "PUT",
+            "headers": {"content-type": "application/json"},
+            body: JSON.stringify(
+              {"googleCalendarId": calendarId, "telegramChatId": chatId}
+            )
+          }
+        )
+        if (!response.ok) {
+          this.setState({"error": true})
+        }
+      } catch {
+        this.setState({"error": true})
+      }
+      this.setState({"buttonText": "Link"})
+    }
+    let errorP
+    if (this.state.error) {
+      errorP = <p>Error linking calendar to chat</p>
+    }
+    return (
+      <div>
+        <div>
+          <GoogleCalendars selectId="calendars"/>
+          <span>&rarr;</span>
+          <TelegramGroups selectId="chats"/>
+          <button onClick={submit}>{this.state.buttonText}</button>
+        </div>
+        <div>{errorP}</div>
+      </div>
+    )
+  }
+}
+
+const GoogleTelegramLinks = () => {
+  const {data, error} = useSwr("/api/v1/googletelegramlinks", fetcher)
+  if (error) {
+    return <p>Error loading Google calendar/Telegram group links</p>
+  }
+  if (!data) {
+    return <p>Loading Google calendar/Telegram group links...</p>
+  }
+  return (
+    <ul>
+      {data.googleTelegramLinks.map(
+        ({
+          googleCalenderId,
+          googleCalendarSummary,
+          telegramChatId,
+          telegramChatTitle,
+        }) => (
+          <li key={googleCalenderId + "-" + telegramChatId}>
+            {googleCalendarSummary} &rarr; {telegramChatTitle}
+          </li>
+        )
+      )}
+    </ul>
   )
 }
 
@@ -87,11 +167,15 @@ export default function Dashboard() {
       </Head>
       <h1>Fructify Dashboard</h1>
       <LoggedIn>
-        <TelegramLink/>
-        <TelegramGroups/>
-        <GoogleLink/>
-        <GoogleCalendars/>
-        <p><a href="/api/v1/logout">Log out</a></p>
+        <div>
+          <TelegramLink/>
+          <GoogleLink/>
+          Link Google calendar to Telegram group:
+          <NewLink/>
+          Google calendar/Telegram group links:
+          <GoogleTelegramLinks/>
+          <p><a href="/api/v1/logout">Log out</a></p>
+        </div>
       </LoggedIn>
       <DefaultStyle/>
     </div>
