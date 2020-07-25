@@ -13,6 +13,7 @@ from fructify.blueprints import (
     googlecallback,
     googlecheck,
     googlelink,
+    googletelegramlinks,
     login,
     logout,
     telegramchats,
@@ -36,6 +37,7 @@ def create_app():
     app.register_blueprint(googlecallback.bp)
     app.register_blueprint(googlecheck.bp)
     app.register_blueprint(googlelink.bp)
+    app.register_blueprint(googletelegramlinks.bp)
     app.register_blueprint(login.bp)
     app.register_blueprint(logout.bp)
     app.register_blueprint(telegramchats.bp)

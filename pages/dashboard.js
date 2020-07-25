@@ -145,12 +145,11 @@ const GoogleTelegramLinks = () => {
     <ul>
       {data.googleTelegramLinks.map(
         ({
-          googleCalenderId,
+          externalId,
           googleCalendarSummary,
-          telegramChatId,
           telegramChatTitle,
         }) => (
-          <li key={googleCalenderId + "-" + telegramChatId}>
+          <li key={externalId}>
             {googleCalendarSummary} &rarr; {telegramChatTitle}
           </li>
         )
