@@ -115,7 +115,7 @@ class NewLink extends React.Component {
       }
       this.setState({"buttonText": "Link"})
     }
-    let errorP
+    let errorP = <p>&nbsp;</p>
     if (this.state.error) {
       errorP = <p>Error linking calendar to chat</p>
     }
@@ -127,7 +127,7 @@ class NewLink extends React.Component {
           <TelegramGroups selectId="chats"/>
           <button onClick={submit}>{this.state.buttonText}</button>
         </div>
-        <div>{errorP}</div>
+        {errorP}
       </div>
     )
   }
@@ -170,9 +170,9 @@ export default function Dashboard() {
         <div>
           <TelegramLink/>
           <GoogleLink/>
-          Link Google calendar to Telegram group:
+          <p>Link Google calendar to Telegram group:</p>
           <NewLink/>
-          Google calendar/Telegram group links:
+          <p>Google calendar/Telegram group links:</p>
           <GoogleTelegramLinks/>
           <p><a href="/api/v1/logout">Log out</a></p>
         </div>
