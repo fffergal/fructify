@@ -4,13 +4,13 @@ import os
 import beeline
 import psycopg2
 from authlib.integrations.flask_client import OAuth
-from flask import session
+from flask import g, session
 
 from fructify.tracing import trace_cm
 
 
 def fetch_google_token():
-    sub = session.get("profile", {}).get("user_id")
+    sub = session.get("profile", {}).get("user_id") or getattr(g, "sub", None)
     assert sub
     with beeline.tracer("db connection"):
         with beeline.tracer("open db connection"):

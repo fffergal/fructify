@@ -6,10 +6,12 @@ from fructify.auth import oauth
 from fructify.blueprints import (
     auth0callback,
     authcheck,
+    calendarcron,
     cleaning_from_gcal,
     days_until,
     debug,
     googlecalendars,
+    googlecalendarwebhook,
     googlecallback,
     googlecheck,
     googlelink,
@@ -30,10 +32,12 @@ def create_app():
 
     app.register_blueprint(auth0callback.bp)
     app.register_blueprint(authcheck.bp)
+    app.register_blueprint(calendarcron.bp)
     app.register_blueprint(cleaning_from_gcal.bp)
     app.register_blueprint(days_until.bp)
     app.register_blueprint(debug.bp)
     app.register_blueprint(googlecalendars.bp)
+    app.register_blueprint(googlecalendarwebhook.bp)
     app.register_blueprint(googlecallback.bp)
     app.register_blueprint(googlecheck.bp)
     app.register_blueprint(googlelink.bp)

@@ -1,5 +1,4 @@
 import os
-import urllib.parse
 import uuid
 
 from flask import Blueprint, request, session, url_for
@@ -97,6 +96,20 @@ def googletelegramlinks_put():
                         )
                     if cursor.rowcount:
                         return ({"error": "link exists already"}, 400)
+            watch_response = oauth.google.post(
+                (
+                    "https://www.googleapis.com/calendar/v3/calendars"
+                    f"/{google_calendar_id}/events/watch"
+                ),
+                json={
+                    "id": external_id,
+                    "type": "web_hook",
+                    "address": url_for(
+                        "googlecalendarwebhook.googlecalendarwebhook", _external=True
+                    ),
+                },
+            )
+            watch_response.raise_for_status()
             with beeline.tracer("insert google telegram link transaction"), connection:
                 with beeline.tracer("cursor"), connection.cursor() as cursor:
                     with beeline.tracer("insert google telegram link query"):
@@ -113,27 +126,10 @@ def googletelegramlinks_put():
                                 )
                             VALUES (%s, %s, %s, 'google', %s, 'telegram')
                             """,
-                            (
-                                external_id,
-                                sub,
-                                google_calendar_id,
-                                telegram_chat_id,
-                            ),
+                            (external_id, sub, google_calendar_id, telegram_chat_id,),
                         )
         finally:
             connection.close()
-    watch_response = oauth.google.put(
-        (
-            "https://www.googleapis.com/calendar/v3/calendars"
-            f"/{urllib.parse.quote(google_calendar_id)}/events/watch"
-        ),
-        json={
-            "id": external_id,
-            "type": "web_hook",
-            "address": url_for("googlecalendarwebhook.googlecalendarwebhook"),
-        },
-    )
-    watch_response.raise_for_status()
     return ({"message": "link created"}, 201)
 
 
@@ -173,7 +169,7 @@ def googletelegramlinks_get():
                             """,
                             (sub,),
                         )
-                        rows = list(cursor)
+                    rows = list(cursor)
         finally:
             connection.close()
     return {
