@@ -3,7 +3,7 @@ import os
 
 import psycopg2
 import requests
-from beeline import tracer
+from beeline import tracer, add_context_field
 from flask import Blueprint, g, request, url_for
 
 from fructify.auth import oauth
@@ -15,6 +15,13 @@ bp = Blueprint("googlecalendarwebhook", __name__)
 @bp.route("/api/v1/googlecalendarwebhook", methods=["POST"])
 def googlecalendarwebhook():
     external_id = request.headers["x-goog-channel-id"]
+    if "x-goog-channel-expiration" in request.headers:
+        google_watch_expires = datetime.datetime.strptime(
+            request.headers["x-goog-channel-expiration"], "%a, %d %b %Y %H:%M:%S %Z"
+        )
+        add_context_field(
+            "google_watch_expires", f"{google_watch_expires:%Y-%m-%dT%H:%M:%SZ}"
+        )
     now = datetime.datetime.utcnow()
     with tracer("db connection"):
         try:
