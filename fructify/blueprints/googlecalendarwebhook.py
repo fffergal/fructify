@@ -137,6 +137,15 @@ def googlecalendarwebhook():
                                     "token": os.environ["EASYCRON_KEY"],
                                     "id": cron_id,
                                     "cron_expression": f"{start:%M %H %d %m * %Y}",
+                                    "url": url_for(
+                                        "calendarcron.calendarcron",
+                                        _external=True,
+                                        next_event_start_time=(
+                                            f"{start:%Y-%m-%dT%H:%M:%S}"
+                                        ),
+                                        calendar_id=google_calendar_id,
+                                        calendar_type="google",
+                                    ),
                                 },
                             )
                             cron_response.raise_for_status()
