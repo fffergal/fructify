@@ -28,6 +28,19 @@ from fructify.tracing import with_flask_tracing
 def create_app():
     app = with_flask_tracing(Flask(__name__))
     app.config["SECRET_KEY"] = os.environ["FLASK_SECRET_KEY"]
+    app.config.update(
+        {
+            "AUTH0_CLIENT_ID": os.environ["AUTH0_CLIENT_ID"],
+            "AUTH0_CLIENT_SECRET": os.environ["AUTH0_CLIENT_SECRET"],
+            "AUTH0_API_BASE_URL": f"https://{os.environ['AUTH0_DOMAIN']}",
+            "AUTH0_ACCESS_TOKEN_URL": (
+                f"https://{os.environ['AUTH0_DOMAIN']}/oauth/token"
+            ),
+            "AUTH0_AUTHORIZE_URL": f"https://{os.environ['AUTH0_DOMAIN']}/authorize",
+            "GOOGLE_CLIENT_ID": os.environ["GOOGLE_CLIENT_ID"],
+            "GOOGLE_CLIENT_SECRET": os.environ["GOOGLE_CLIENT_SECRET"],
+        }
+    )
     oauth.init_app(app)
 
     app.register_blueprint(auth0callback.bp)
