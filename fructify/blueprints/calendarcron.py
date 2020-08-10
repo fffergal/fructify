@@ -1,9 +1,10 @@
 import os
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 import psycopg2
 import requests
-from beeline import add_context_field, tracer
+from backports.zoneinfo import ZoneInfo
+from beeline import tracer
 from flask import Blueprint, g, request
 
 from fructify.auth import oauth
@@ -60,14 +61,11 @@ def calendarcron():
                     "timeZone": "Etc/UTC",
                 },
             )
-            events = events_response.json()["items"]
+            events_obj = events_response.json()
+            calendar_tz = events_obj["timeZone"]
+            events = events_obj["items"]
             for event in events:
-                if "date" in event["start"]:
-                    start = datetime.strptime(event["start"]["date"], "%Y-%m-%d")
-                else:
-                    start = datetime.strptime(
-                        event["start"]["dateTime"], "%Y-%m-%dT%H:%M:%SZ"
-                    )
+                start = parse_event_time(event["start"], calendar_tz)
                 if start > now:
                     break
             else:  # no break
@@ -102,12 +100,7 @@ def calendarcron():
                         raise Exception(error)
             events_to_send = []
             for event in events:
-                if "date" in event["start"]:
-                    start = datetime.strptime(event["start"]["date"], "%Y-%m-%d")
-                else:
-                    start = datetime.strptime(
-                        event["start"]["dateTime"], "%Y-%m-%dT%H:%M:%SZ"
-                    )
+                start = parse_event_time(event["start"], calendar_tz)
                 if cron_start_time <= start <= now:
                     events_to_send.append(event)
             with tracer("find calendar chats transaction"), connection:
@@ -127,21 +120,29 @@ def calendarcron():
                             """,
                             (g.sub, calendar_id),
                         )
-                    add_context_field("event_count", len(events_to_send))
-                    add_context_field("chat_count", cursor.rowcount)
-                    for (chat_id,) in cursor:
-                        for event in events_to_send:
-                            telegram_response = requests.get(
-                                (
-                                    f"https://api.telegram.org/bot{telegram_key}"
-                                    "/sendMessage"
-                                ),
-                                data={
-                                    "chat_id": chat_id,
-                                    "text": f"{event['summary']}",
-                                },
-                            )
-                            assert telegram_response.json()["ok"]
+                    rows = list(cursor)
+            for (chat_id,) in rows:
+                for event in events_to_send:
+                    telegram_response = requests.get(
+                        f"https://api.telegram.org/bot{telegram_key}/sendMessage",
+                        data={"chat_id": chat_id, "text": f"{event['summary']}"},
+                    )
+                    assert telegram_response.json()["ok"]
         finally:
             connection.close()
     return ("", 204)
+
+
+def parse_event_time(time_playload, calendar_tz):
+    """
+    Parse a Gcal event time and timezone and return a naive datetime in UTC.
+
+    The payload has different fields for a full datetime or just a date. Datetimes are
+    assumed to be in UTC already as that can be forced in the Gcal request. Dates are
+    for all day events, so the day begins at 0000 in the calendar's timezone.
+    """
+    if "date" in time_playload:
+        midnight = datetime.strptime(time_playload["date"], "%Y-%m-%d")
+        aware_time = midnight.replace(tzinfo=ZoneInfo(calendar_tz))
+        return aware_time.astimezone(timezone.utc).replace(tzinfo=None)
+    return datetime.strptime(time_playload["dateTime"], "%Y-%m-%dT%H:%M:%SZ")

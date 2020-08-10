@@ -7,6 +7,7 @@ from beeline import tracer, add_context_field
 from flask import Blueprint, g, request, url_for
 
 from fructify.auth import oauth
+from fructify.blueprints.calendarcron import parse_event_time
 
 
 bp = Blueprint("googlecalendarwebhook", __name__)
@@ -57,16 +58,11 @@ def googlecalendarwebhook():
                     "timeZone": "Etc/UTC",
                 },
             )
-            events = events_response.json()["items"]
+            events_obj = events_response.json()
+            events = events_obj["items"]
+            calendar_tz = events_obj["timeZone"]
             for event in events:
-                if "date" in event["start"]:
-                    start = datetime.datetime.strptime(
-                        event["start"]["date"], "%Y-%m-%d"
-                    )
-                else:
-                    start = datetime.datetime.strptime(
-                        event["start"]["dateTime"], "%Y-%m-%dT%H:%M:%SZ"
-                    )
+                start = parse_event_time(event["start"], calendar_tz)
                 if start > now:
                     break
             else:  # no break
