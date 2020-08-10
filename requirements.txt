@@ -5,6 +5,7 @@
 #    pip-compile
 #
 authlib==0.14.3           # via fructify (setup.py)
+backports.zoneinfo==0.2.1  # via fructify (setup.py)
 blinker==1.4              # via fructify (setup.py)
 certifi==2019.11.28       # via requests
 cffi==1.14.0              # via cryptography
@@ -14,6 +15,7 @@ cryptography==2.9.2       # via authlib
 flask==1.1.2              # via fructify (setup.py)
 honeycomb-beeline==2.11.4  # via fructify (setup.py)
 idna==2.9                 # via requests
+importlib-resources==3.0.0  # via backports.zoneinfo
 itsdangerous==1.1.0       # via flask
 jinja2==2.11.2            # via flask
 libhoney==1.9.0           # via honeycomb-beeline
@@ -26,3 +28,4 @@ statsd==3.3.0             # via libhoney
 urllib3==1.25.8           # via requests
 werkzeug==1.0.1           # via flask
 wrapt==1.12.1             # via fructify (setup.py), honeycomb-beeline
+zipp==3.1.0               # via importlib-resources
