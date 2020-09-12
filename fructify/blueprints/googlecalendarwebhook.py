@@ -1,9 +1,9 @@
 import datetime
 import os
 
+import beeline
 import psycopg2
 import requests
-from beeline import tracer
 from flask import Blueprint, g, request, url_for
 
 from fructify.auth import oauth
@@ -16,14 +16,20 @@ bp = Blueprint("googlecalendarwebhook", __name__)
 @bp.route("/api/v1/googlecalendarwebhook", methods=["POST"])
 def googlecalendarwebhook():
     external_id = request.headers["x-goog-channel-id"]
+    beeline.add_context_field("goog_channel_id", external_id)
+    beeline.add_context_field("goog_resource_id", request.headers["x-goog-resource-id"])
+    expiry = datetime.datetime.strptime(
+        request.headers["x-goog-channel-expiration"], "%a, %d %b %Y %H:%M:%S %Z"
+    )
+    beeline.add_context_field("goog_channel_expiration", f"{expiry:%Y-%m-%dT%H:%M:%SZ}")
     now = datetime.datetime.utcnow()
-    with tracer("db connection"):
+    with beeline.tracer("db connection"):
         try:
-            with tracer("open db connection"):
+            with beeline.tracer("open db connection"):
                 connection = psycopg2.connect(os.environ["POSTGRES_DSN"])
-            with tracer("find google issuer_sub transaction"), connection:
-                with tracer("cursor"), connection.cursor() as cursor:
-                    with tracer("find google issuer_sub query"):
+            with beeline.tracer("find google issuer_sub transaction"), connection:
+                with beeline.tracer("cursor"), connection.cursor() as cursor:
+                    with beeline.tracer("find google issuer_sub query"):
                         cursor.execute(
                             """
                             SELECT
@@ -61,9 +67,9 @@ def googlecalendarwebhook():
             else:  # no break
                 return ("", 204)
 
-            with tracer("calendarcron table exists transaction"), connection:
-                with tracer("cursor"), connection.cursor() as cursor:
-                    with tracer("calendarcron table exists query"):
+            with beeline.tracer("calendarcron table exists transaction"), connection:
+                with beeline.tracer("cursor"), connection.cursor() as cursor:
+                    with beeline.tracer("calendarcron table exists query"):
                         cursor.execute(
                             """
                             SELECT
@@ -75,7 +81,7 @@ def googlecalendarwebhook():
                             """
                         )
                     if not cursor.rowcount:
-                        with tracer("create calendarcron table query"):
+                        with beeline.tracer("create calendarcron table query"):
                             cursor.execute(
                                 """
                                 CREATE TABLE
@@ -88,9 +94,9 @@ def googlecalendarwebhook():
                                     )
                                 """
                             )
-            with tracer("check next cron transaction"), connection:
-                with tracer("cursor"), connection.cursor() as cursor:
-                    with tracer("check next cron query"):
+            with beeline.tracer("check next cron transaction"), connection:
+                with beeline.tracer("cursor"), connection.cursor() as cursor:
+                    with beeline.tracer("check next cron query"):
                         cursor.execute(
                             """
                             SELECT
@@ -110,7 +116,7 @@ def googlecalendarwebhook():
                         new_is_earlier = start < existing_next_start_time
                         old_has_passed = existing_next_start_time < now
                         if new_is_earlier or old_has_passed:
-                            with tracer("update cron time query"):
+                            with beeline.tracer("update cron time query"):
                                 cursor.execute(
                                     """
                                     UPDATE
@@ -169,7 +175,7 @@ def googlecalendarwebhook():
                         error = cron_response.json().get("error", {}).get("message")
                         if error:
                             raise Exception(error)
-                        with tracer("insert cron query"):
+                        with beeline.tracer("insert cron query"):
                             cursor.execute(
                                 """
                                 INSERT INTO
