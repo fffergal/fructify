@@ -31,7 +31,7 @@ def googlecalendarwebhook():
                             FROM
                                 calendarchatlink
                             WHERE
-                                calendarchatlink.external_id = %s
+                                external_id = %s
                                 AND calendar_type = 'google'
                             """,
                             (external_id,),
