@@ -1,5 +1,6 @@
 import os
 import uuid
+from datetime import datetime
 
 import beeline
 import psycopg2
@@ -237,7 +238,7 @@ def googletelegramlinks_put():
                         _external=True,
                         external_id=external_id,
                     ),
-                    "cron_expression": "*/59 * * * * *",
+                    "cron_expression": f"{datetime.utcnow().minute} */1 * * * *",
                     "timezone_from": "2",
                     "timezone": "UTC",
                 },
