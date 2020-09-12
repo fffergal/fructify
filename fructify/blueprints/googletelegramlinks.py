@@ -1,9 +1,10 @@
 import os
 import uuid
 
-from flask import Blueprint, request, session, url_for
 import beeline
 import psycopg2
+import requests
+from flask import Blueprint, request, session, url_for
 
 from fructify.auth import oauth
 
@@ -26,11 +27,11 @@ def googletelegramlinks_put():
         calendar["id"] for calendar in calendar_list_response.json()["items"]
     ]
     assert google_calendar_id in calendar_ids
-    external_id = str(uuid.uuid4())
     with beeline.tracer("db connection"):
         with beeline.tracer("open db connection"):
             connection = psycopg2.connect(os.environ["POSTGRES_DSN"])
         try:
+
             with beeline.tracer("check chat ownership transaction"), connection:
                 with beeline.tracer("cursor"), connection.cursor() as cursor:
                     with beeline.tracer("check chat ownership query"):
@@ -48,6 +49,7 @@ def googletelegramlinks_put():
                             (sub, telegram_chat_id),
                         )
                     assert cursor.rowcount
+
             with beeline.tracer("calendarchatlink maintenance transaction"), connection:
                 with beeline.tracer("cursor"), connection.cursor() as cursor:
                     with beeline.tracer("calendarchatlink exists query"):
@@ -76,13 +78,41 @@ def googletelegramlinks_put():
                                     )
                                 """
                             )
+
+            with beeline.tracer("googlewatch maintenance transaction"), connection:
+                with beeline.tracer("cursor"), connection.cursor() as cursor:
+                    with beeline.tracer("googlewatch exists query"):
+                        cursor.execute(
+                            """
+                            SELECT
+                                table_name
+                            FROM
+                                information_schema.tables
+                            WHERE
+                                table_name = 'googlewatch'
+                            """
+                        )
+                    if not cursor.rowcount:
+                        with beeline.tracer("create googlewatch table query"):
+                            cursor.execute(
+                                """
+                                CREATE TABLE
+                                    googlewatch (
+                                        external_id text,
+                                        resource_id text,
+                                        sub text,
+                                        calendar_id text
+                                    )
+                                """
+                            )
+
             with beeline.tracer("google telegram link exists transaction"), connection:
                 with beeline.tracer("cursor"), connection.cursor() as cursor:
                     with beeline.tracer("google telegram link exists query"):
                         cursor.execute(
                             """
                             SELECT
-                                external_id
+                                sub
                             FROM
                                 calendarchatlink
                             WHERE
@@ -96,20 +126,29 @@ def googletelegramlinks_put():
                         )
                     if cursor.rowcount:
                         return ({"error": "link exists already"}, 400)
-            watch_response = oauth.google.post(
-                (
-                    "https://www.googleapis.com/calendar/v3/calendars"
-                    f"/{google_calendar_id}/events/watch"
-                ),
-                json={
-                    "id": external_id,
-                    "type": "web_hook",
-                    "address": url_for(
-                        "googlecalendarwebhook.googlecalendarwebhook", _external=True
-                    ),
-                },
-            )
-            watch_response.raise_for_status()
+
+            with beeline.tracer("find googlewatch transaction"), connection:
+                with beeline.tracer("cursor"), connection.cursor() as cursor:
+                    with beeline.tracer("googlewatch exists query"):
+                        cursor.execute(
+                            """
+                            SELECT
+                                external_id,
+                                resource_id
+                            FROM
+                                googlewatch
+                            WHERE
+                                calendar_id = %s
+                                AND sub = %s
+                            """,
+                            (google_calendar_id, sub),
+                        )
+                    if cursor.rowcount:
+                        external_id, resource_id = next(cursor)
+                    else:
+                        external_id = str(uuid.uuid4())
+                        resource_id = None
+
             with beeline.tracer("insert google telegram link transaction"), connection:
                 with beeline.tracer("cursor"), connection.cursor() as cursor:
                     with beeline.tracer("insert google telegram link query"):
@@ -126,7 +165,103 @@ def googletelegramlinks_put():
                                 )
                             VALUES (%s, %s, %s, 'google', %s, 'telegram')
                             """,
-                            (external_id, sub, google_calendar_id, telegram_chat_id,),
+                            (external_id, sub, google_calendar_id, telegram_chat_id),
+                        )
+
+            if not resource_id:
+                watch_response = oauth.google.post(
+                    (
+                        "https://www.googleapis.com/calendar/v3/calendars"
+                        f"/{google_calendar_id}/events/watch"
+                    ),
+                    json={
+                        "id": external_id,
+                        "type": "web_hook",
+                        "address": url_for(
+                            "googlecalendarwebhook.googlecalendarwebhook",
+                            _external=True,
+                        ),
+                    },
+                )
+                watch_response.raise_for_status()
+                resource_id = watch_response.json()["resourceId"]
+                with beeline.tracer("insert googlewatch transaction"), connection:
+                    with beeline.tracer("cursor"), connection.cursor() as cursor:
+                        with beeline.tracer("insert googlewatch query"):
+                            cursor.execute(
+                                """
+                                INSERT INTO
+                                    googlewatch (
+                                        external_id,
+                                        resource_id,
+                                        sub,
+                                        calendar_id
+                                    )
+                                VALUES
+                                    (%s, %s, %s, %s)
+                                """,
+                                (external_id, resource_id, sub, google_calendar_id),
+                            )
+
+            with beeline.tracer("renewwatchcron maintenance transaction"), connection:
+                with beeline.tracer("cursor"), connection.cursor() as cursor:
+                    with beeline.tracer("renewwatchcron exists query"):
+                        cursor.execute(
+                            """
+                            SELECT
+                                table_name
+                            FROM
+                                information_schema.tables
+                            WHERE
+                                table_name = 'renewwatchcron'
+                            """
+                        )
+                    if not cursor.rowcount:
+                        with beeline.tracer("renewwatchcron create query"):
+                            cursor.execute(
+                                """
+                                CREATE TABLE
+                                    renewwatchcron (
+                                        sub text,
+                                        external_id text,
+                                        cron_id text
+                                    )
+                                """
+                            )
+            cron_response = requests.get(
+                "https://www.easycron.com/rest/add",
+                params={
+                    "token": os.environ["EASYCRON_KEY"],
+                    "url": url_for(
+                        "renewwatchcron.renewwatchcron",
+                        _external=True,
+                        external_id=external_id,
+                    ),
+                    "cron_expression": "*/59 * * * * *",
+                    "timezone_from": "2",
+                    "timezone": "UTC",
+                },
+            )
+            cron_response.raise_for_status()
+            error = cron_response.json().get("error", {}).get("message")
+            if error:
+                raise Exception(error)
+
+            with beeline.tracer("insert renewwatchcron transaction"), connection:
+                with beeline.tracer("cursor"), connection.cursor() as cursor:
+                    with beeline.tracer("insert renewwatchcron query"):
+                        cursor.execute(
+                            """
+                            INSERT INTO
+                                renewwatchcron (
+                                    sub,
+                                    external_id,
+                                    cron_id
+                                )
+                            VALUES
+                                (%s, %s, %s)
+                            """,
+                            (sub, external_id, cron_response.json()["cron_job_id"]),
                         )
         finally:
             connection.close()
@@ -149,6 +284,7 @@ def googletelegramlinks_get():
         with beeline.tracer("open db connection"):
             connection = psycopg2.connect(os.environ["POSTGRES_DSN"])
         try:
+
             with beeline.tracer("calendar chat link transaction"), connection:
                 with beeline.tracer("cursor"), connection.cursor() as cursor:
                     with beeline.tracer("calendar chat link query"):

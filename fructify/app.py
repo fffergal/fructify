@@ -18,6 +18,7 @@ from fructify.blueprints import (
     googletelegramlinks,
     login,
     logout,
+    renewwatchcron,
     telegramchats,
     telegramdeeplink,
     telegramwebhook,
@@ -57,6 +58,7 @@ def create_app():
     app.register_blueprint(googletelegramlinks.bp)
     app.register_blueprint(login.bp)
     app.register_blueprint(logout.bp)
+    app.register_blueprint(renewwatchcron.bp)
     app.register_blueprint(telegramchats.bp)
     app.register_blueprint(telegramdeeplink.bp)
     app.register_blueprint(telegramwebhook.bp)

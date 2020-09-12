@@ -8,9 +8,7 @@ from beeline import tracer
 from flask import Blueprint, g, request, url_for
 
 from fructify.auth import oauth
-
-
-EASYCRON_IPS = ["198.27.83.222", "192.99.21.124", "167.114.64.88", "167.114.64.21"]
+from fructify.constants import EASYCRON_IPS
 
 
 bp = Blueprint("calendarcron", __name__)
