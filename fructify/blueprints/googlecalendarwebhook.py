@@ -51,7 +51,7 @@ def googlecalendarwebhook():
                     f"/{google_calendar_id}/events"
                 ),
                 params={
-                    "maxResults": "250",
+                    "maxResults": "50",
                     "orderBy": "startTime",
                     "singleEvents": "true",
                     "timeMin": f"{now:%Y-%m-%dT%H:%M:%SZ}",

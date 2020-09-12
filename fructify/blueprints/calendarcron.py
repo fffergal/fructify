@@ -52,7 +52,7 @@ def calendarcron():
                     f"/{calendar_id}/events"
                 ),
                 params={
-                    "maxResults": "250",
+                    "maxResults": "50",
                     "orderBy": "startTime",
                     "singleEvents": "true",
                     "timeMin": f"{start_minus_1m:%Y-%m-%dT%H:%M:%SZ}",
