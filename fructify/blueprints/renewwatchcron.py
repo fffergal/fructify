@@ -71,6 +71,8 @@ def renewwatchcron():
             "address": url_for(
                 "googlecalendarwebhook.googlecalendarwebhook", _external=True
             ),
+            # 28 days in milliseconds
+            "expiration": 2_419_200_000,
         },
     )
     watch_response.raise_for_status()
