@@ -1,6 +1,6 @@
 import os
 import uuid
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import beeline
 import psycopg2
@@ -170,6 +170,7 @@ def googletelegramlinks_put():
                         )
 
             if not resource_id:
+                request_expiration = datetime.utcnow() + timedelta(days=28)
                 watch_response = oauth.google.post(
                     (
                         "https://www.googleapis.com/calendar/v3/calendars"
@@ -182,14 +183,13 @@ def googletelegramlinks_put():
                             "googlecalendarwebhook.googlecalendarwebhook",
                             _external=True,
                         ),
-                        # 28 days in milliseconds
-                        "expiration": 2_419_200_000,
+                        "expiration": int(request_expiration.timestamp() * 1000),
                     },
                 )
                 watch_response.raise_for_status()
                 watch_json = watch_response.json()
                 resource_id = watch_json["resourceId"]
-                expiration = datetime.utcfromtimestamp(
+                response_expiration = datetime.utcfromtimestamp(
                     int(watch_json["expiration"]) / 1000
                 )
                 with beeline.tracer("insert googlewatch transaction"), connection:
@@ -245,7 +245,7 @@ def googletelegramlinks_put():
                         _external=True,
                         external_id=external_id,
                     ),
-                    "cron_expression": f"{expiration:%M %H %d %m * %Y}",
+                    "cron_expression": f"{response_expiration:%M %H %d %m * %Y}",
                     "timezone_from": "2",
                     "timezone": "UTC",
                 },

@@ -1,5 +1,5 @@
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import beeline
 import psycopg2
@@ -60,6 +60,7 @@ def renewwatchcron():
         json={"id": external_id, "resourceId": resource_id},
     )
     assert stop_response.ok or stop_response.status_code == 404
+    request_expiration = datetime.utcnow() + timedelta(days=28)
     watch_response = oauth.google.post(
         (
             "https://www.googleapis.com/calendar/v3/calendars"
@@ -71,12 +72,11 @@ def renewwatchcron():
             "address": url_for(
                 "googlecalendarwebhook.googlecalendarwebhook", _external=True
             ),
-            # 28 days in milliseconds
-            "expiration": 2_419_200_000,
+            "expiration": int(request_expiration.timestamp() * 1000),
         },
     )
     watch_response.raise_for_status()
-    expiration = datetime.utcfromtimestamp(
+    response_expiration = datetime.utcfromtimestamp(
         int(watch_response.json()["expiration"]) / 1000
     )
     cron_response = requests.get(
@@ -84,7 +84,7 @@ def renewwatchcron():
         params={
             "token": os.environ["EASYCRON_KEY"],
             "id": cron_id,
-            "cron_expression": f"{expiration:%M %H %d %m * %Y}",
+            "cron_expression": f"{response_expiration:%M %H %d %m * %Y}",
             "url": url_for(
                 "renewwatchcron.renewwatchcron",
                 _external=True,
