@@ -42,6 +42,10 @@ def googlecalendarwebhook():
                             """,
                             (external_id,),
                         )
+                    if not cursor.rowcount:
+                        # Google retries 500 errors, even for deleted channels. Return a
+                        # 404 and it won't try again.
+                        return ("", 404)
                     assert cursor.rowcount == 1
                     g.sub, google_calendar_id = next(cursor)
             events_response = oauth.google.get(
