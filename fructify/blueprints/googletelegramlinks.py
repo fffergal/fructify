@@ -182,10 +182,16 @@ def googletelegramlinks_put():
                             "googlecalendarwebhook.googlecalendarwebhook",
                             _external=True,
                         ),
+                        # 28 days in milliseconds
+                        "expiration": 2_419_200_000,
                     },
                 )
                 watch_response.raise_for_status()
-                resource_id = watch_response.json()["resourceId"]
+                watch_json = watch_response.json()
+                resource_id = watch_json["resourceId"]
+                expiration = datetime.utcfromtimestamp(
+                    int(watch_json["expiration"]) / 1000
+                )
                 with beeline.tracer("insert googlewatch transaction"), connection:
                     with beeline.tracer("cursor"), connection.cursor() as cursor:
                         with beeline.tracer("insert googlewatch query"):
@@ -229,6 +235,7 @@ def googletelegramlinks_put():
                                     )
                                 """
                             )
+
             cron_response = requests.get(
                 "https://www.easycron.com/rest/add",
                 params={
@@ -238,7 +245,7 @@ def googletelegramlinks_put():
                         _external=True,
                         external_id=external_id,
                     ),
-                    "cron_expression": f"{datetime.utcnow().minute} */1 * * * *",
+                    "cron_expression": f"{expiration:%M %H %d %m * %Y}",
                     "timezone_from": "2",
                     "timezone": "UTC",
                 },

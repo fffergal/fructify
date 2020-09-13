@@ -1,7 +1,9 @@
 import os
+from datetime import datetime
 
 import beeline
 import psycopg2
+import requests
 from flask import Blueprint, g, request, url_for
 
 from fructify.auth import oauth
@@ -72,4 +74,24 @@ def renewwatchcron():
         },
     )
     watch_response.raise_for_status()
+    expiration = datetime.utcfromtimestamp(
+        int(watch_response.json()["expiration"]) / 1000
+    )
+    cron_response = requests.get(
+        "https://www.easycron.com/rest/edit",
+        params={
+            "token": os.environ["EASYCRON_KEY"],
+            "id": cron_id,
+            "cron_expression": f"{expiration:%M %H %d %m * %Y}",
+            "url": url_for(
+                "renewwatchcron.renewwatchcron",
+                _external=True,
+                external_id=external_id,
+            ),
+        },
+    )
+    cron_response.raise_for_status()
+    error = cron_response.json().get("error", {}).get("message")
+    if error:
+        raise Exception(error)
     return ("", 204)
