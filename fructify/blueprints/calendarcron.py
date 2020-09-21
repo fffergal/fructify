@@ -126,15 +126,16 @@ def calendarcron():
                             (g.sub, calendar_id),
                         )
                     rows = list(cursor)
-            for (chat_id,) in rows:
-                for event in events_to_send:
-                    telegram_response = requests.get(
-                        f"https://api.telegram.org/bot{telegram_key}/sendMessage",
-                        data={"chat_id": chat_id, "text": f"{event['summary']}"},
-                    )
-                    assert telegram_response.json()["ok"]
         finally:
             connection.close()
+    with tracer("telegram sends"):
+        for (chat_id,) in rows:
+            for event in events_to_send:
+                telegram_response = requests.get(
+                    f"https://api.telegram.org/bot{telegram_key}/sendMessage",
+                    data={"chat_id": chat_id, "text": f"{event['summary']}"},
+                )
+                assert telegram_response.json()["ok"]
     return ("", 204)
 
 
