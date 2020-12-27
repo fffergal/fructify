@@ -8,7 +8,9 @@ Frucitify is deployed to [Vercel][vercel]. You can use the [CLI][cli] to run a
 local version too.
 
 Secrets are inserted as environment variables. You can see which secrets are
-needed by looking in vercel.json. Put local secrets in a .env file.
+needed by looking in vercel.json. Put local secrets in a .env file. If you have
+access to LastPass and the lpass CLI installed, you can use make_env.sh to make
+the .env file.
 
 Start a local server with `vercel dev`.
 
