@@ -10,8 +10,8 @@ jobs:
       - run: black --check .
       - run: flake8
       - run: tox
-      - run: pip-compile
-      - run: pip-compile dev-requirements.in
+      - run: pip-compile --no-emit-index-url
+      - run: pip-compile --no-emit-index-url dev-requirements.in
       - run: git diff --exit-code -- dev-requirements.txt requirements.txt
   test_javascript:
     docker:
