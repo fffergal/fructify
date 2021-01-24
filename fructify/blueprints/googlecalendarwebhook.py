@@ -1,10 +1,12 @@
 import datetime
 import os
+from contextlib import suppress
 
 import psycopg2
 import requests
 from beeline import add_context_field, tracer
 from flask import Blueprint, g, request, url_for
+from psycopg2.extras import execute_values
 
 from fructify.auth import oauth
 from fructify.blueprints.calendarcron import parse_event_time
@@ -155,7 +157,6 @@ def googlecalendarwebhook():
                             error = cron_response.json().get("error", {}).get("message")
                             if error:
                                 raise Exception(error)
-                        return ("", 204)
                     else:
                         cron_response = requests.get(
                             "https://www.easycron.com/rest/add",
@@ -200,6 +201,102 @@ def googlecalendarwebhook():
                                     start,
                                 ),
                             )
-                        return ("", 204)
+
+            # New code testing in prod so suppress any errors
+            with suppress(Exception):
+                try:
+                    events_start = find_next_event_start(events_obj, now)
+                except LookupError:
+                    return ("", 204)
+                summaries = find_event_summaries_starting(events_obj, events_start)
+                with tracer("event_details table exists transaction"), connection:
+                    with tracer("cursor"), connection.cursor() as cursor:
+                        with tracer("event_details table exists query"):
+                            cursor.execute(
+                                """
+                                SELECT
+                                    table_name
+                                FROM
+                                    information_schema.tables
+                                WHERE
+                                    table_name = 'event_details'
+                                """
+                            )
+                            if not cursor.rowcount:
+                                with tracer("create event_details table query"):
+                                    cursor.execute(
+                                        """
+                                        CREATE TABLE
+                                            event_details (
+                                                calendar_type text,
+                                                calendar_id text,
+                                                summary text
+                                            )
+                                        """
+                                    )
+                with tracer("update event_details transaction"), connection:
+                    with tracer("cursor"), connection.cursor() as cursor:
+                        with tracer("clear event_details query"):
+                            cursor.execute(
+                                """
+                                DELETE FROM
+                                    event_details
+                                WHERE
+                                    calendar_type = 'google'
+                                    AND calendar_id = %s
+                                """,
+                                (google_calendar_id,),
+                            )
+                        with tracer("insert event_details query"):
+                            execute_values(
+                                cursor,
+                                """
+                                INSERT INTO
+                                    event_details (
+                                        calendar_type,
+                                        calendar_id,
+                                        summary
+                                    )
+                                VALUES %s
+                                """,
+                                [
+                                    ("google", google_calendar_id, summary)
+                                    for summary in summaries
+                                ],
+                            )
+
+            return ("", 204)
         finally:
             connection.close()
+
+
+def find_next_event_start(events_obj, now):
+    """
+    Find the start time of the next event after now from a google calendar response.
+
+    You can only query for events ending after a certain time, so some events in the
+    response could start before that time. The response should be sorted by start time
+    already.
+    """
+    calendar_tz = events_obj["timeZone"]
+    for event in events_obj["items"]:
+        event_start = parse_event_time(event["start"], calendar_tz)
+        if event_start > now:
+            return event_start
+    else:  # no break
+        raise LookupError("All events are before now")
+
+
+def find_event_summaries_starting(events_obj, start):
+    """
+    Find events starting at start in google calendar response and return summaries.
+
+    Events should already be sorted.
+    """
+    calendar_tz = events_obj["timeZone"]
+    for event in events_obj["items"]:
+        event_start = parse_event_time(event["start"], calendar_tz)
+        if event_start > start:
+            break
+        if event_start == start:
+            yield event["summary"]
