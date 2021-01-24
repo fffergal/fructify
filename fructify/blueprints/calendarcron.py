@@ -128,14 +128,14 @@ def calendarcron():
                     rows = list(cursor)
         finally:
             connection.close()
+    summaries = concat_unique([e["summary"] for e in events_to_send], [])
     with tracer("telegram sends"):
         for (chat_id,) in rows:
-            for event in events_to_send:
-                telegram_response = requests.get(
-                    f"https://api.telegram.org/bot{telegram_key}/sendMessage",
-                    data={"chat_id": chat_id, "text": f"{event['summary']}"},
-                )
-                assert telegram_response.json()["ok"]
+            telegram_response = requests.get(
+                f"https://api.telegram.org/bot{telegram_key}/sendMessage",
+                data={"chat_id": chat_id, "text": "\n".join(summaries)},
+            )
+            assert telegram_response.json()["ok"]
     return ("", 204)
 
 
@@ -152,3 +152,12 @@ def parse_event_time(time_playload, calendar_tz):
         aware_time = midnight.replace(tzinfo=ZoneInfo(calendar_tz))
         return aware_time.astimezone(timezone.utc).replace(tzinfo=None)
     return datetime.strptime(time_playload["dateTime"], "%Y-%m-%dT%H:%M:%SZ")
+
+
+def concat_unique(original, new):
+    """Copy original and append all unique items in new if not in original."""
+    copy = list(original)
+    for item in new:
+        if item not in copy:
+            copy.append(item)
+    return copy
