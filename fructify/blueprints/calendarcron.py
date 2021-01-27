@@ -1,14 +1,20 @@
 import os
-from datetime import datetime, timedelta, timezone
+from contextlib import suppress
+from datetime import datetime, timedelta
 
 import psycopg2
 import requests
-from backports.zoneinfo import ZoneInfo
 from beeline import tracer
 from flask import Blueprint, g, request, url_for
+from psycopg2.extras import execute_values
 
 from fructify.auth import oauth
 from fructify.constants import EASYCRON_IPS
+from fructify.googleevents import (
+    find_event_summaries_starting,
+    find_next_event_start,
+    parse_event_time,
+)
 
 
 bp = Blueprint("calendarcron", __name__)
@@ -126,6 +132,70 @@ def calendarcron():
                             (g.sub, calendar_id),
                         )
                     rows = list(cursor)
+
+            # New code testing in prod so suppress any errors
+            with suppress(Exception):
+                try:
+                    events_start = find_next_event_start(events_obj, now)
+                except LookupError:
+                    pass
+                else:
+                    summaries = find_event_summaries_starting(events_obj, events_start)
+                    with tracer("event_details table exists transaction"), connection:
+                        with tracer("cursor"), connection.cursor() as cursor:
+                            with tracer("event_details table exists query"):
+                                cursor.execute(
+                                    """
+                                    SELECT
+                                        table_name
+                                    FROM
+                                        information_schema.tables
+                                    WHERE
+                                        table_name = 'event_details'
+                                    """
+                                )
+                                if not cursor.rowcount:
+                                    with tracer("create event_details table query"):
+                                        cursor.execute(
+                                            """
+                                            CREATE TABLE
+                                                event_details (
+                                                    calendar_type text,
+                                                    calendar_id text,
+                                                    summary text
+                                                )
+                                            """
+                                        )
+                    with tracer("update event_details transaction"), connection:
+                        with tracer("cursor"), connection.cursor() as cursor:
+                            with tracer("clear event_details query"):
+                                cursor.execute(
+                                    """
+                                    DELETE FROM
+                                        event_details
+                                    WHERE
+                                        calendar_type = 'google'
+                                        AND calendar_id = %s
+                                    """,
+                                    (calendar_id,),
+                                )
+                            with tracer("insert event_details query"):
+                                execute_values(
+                                    cursor,
+                                    """
+                                    INSERT INTO
+                                        event_details (
+                                            calendar_type,
+                                            calendar_id,
+                                            summary
+                                        )
+                                    VALUES %s
+                                    """,
+                                    [
+                                        ("google", calendar_id, summary)
+                                        for summary in summaries
+                                    ],
+                                )
         finally:
             connection.close()
     summaries = concat_unique([e["summary"] for e in events_to_send], [])
@@ -137,21 +207,6 @@ def calendarcron():
             )
             assert telegram_response.json()["ok"]
     return ("", 204)
-
-
-def parse_event_time(time_playload, calendar_tz):
-    """
-    Parse a Gcal event time and timezone and return a naive datetime in UTC.
-
-    The payload has different fields for a full datetime or just a date. Datetimes are
-    assumed to be in UTC already as that can be forced in the Gcal request. Dates are
-    for all day events, so the day begins at 0000 in the calendar's timezone.
-    """
-    if "date" in time_playload:
-        midnight = datetime.strptime(time_playload["date"], "%Y-%m-%d")
-        aware_time = midnight.replace(tzinfo=ZoneInfo(calendar_tz))
-        return aware_time.astimezone(timezone.utc).replace(tzinfo=None)
-    return datetime.strptime(time_playload["dateTime"], "%Y-%m-%dT%H:%M:%SZ")
 
 
 def concat_unique(original, new):

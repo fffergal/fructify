@@ -1,13 +1,13 @@
 import unittest
 from datetime import datetime
 
-from fructify.blueprints import googlecalendarwebhook
+from fructify import googleevents
 
 
-class GooglecalendarwebhookTestCase(unittest.TestCase):
+class GoogleeventsTestCase(unittest.TestCase):
     def test_find_next_event_start(self):
         self.assertEqual(
-            googlecalendarwebhook.find_next_event_start(
+            googleevents.find_next_event_start(
                 {
                     "items": [
                         {"start": {"dateTime": "2021-01-10T23:40:00Z"}},
@@ -23,7 +23,7 @@ class GooglecalendarwebhookTestCase(unittest.TestCase):
     def test_find_event_summaries_starting(self):
         self.assertEqual(
             list(
-                googlecalendarwebhook.find_event_summaries_starting(
+                googleevents.find_event_summaries_starting(
                     {
                         "items": [
                             {
@@ -49,4 +49,10 @@ class GooglecalendarwebhookTestCase(unittest.TestCase):
                 )
             ),
             ["Event 2", "Event 3"],
+        )
+
+    def test_parse_event_time(self):
+        self.assertEqual(
+            googleevents.parse_event_time({"date": "2020-08-09"}, "Europe/London"),
+            datetime(2020, 8, 8, 23, 0),
         )

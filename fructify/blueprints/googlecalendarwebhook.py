@@ -10,6 +10,7 @@ from psycopg2.extras import execute_values
 
 from fructify.auth import oauth
 from fructify.blueprints.calendarcron import parse_event_time
+from fructify.googleevents import find_event_summaries_starting, find_next_event_start
 
 
 bp = Blueprint("googlecalendarwebhook", __name__)
@@ -268,35 +269,3 @@ def googlecalendarwebhook():
             return ("", 204)
         finally:
             connection.close()
-
-
-def find_next_event_start(events_obj, now):
-    """
-    Find the start time of the next event after now from a google calendar response.
-
-    You can only query for events ending after a certain time, so some events in the
-    response could start before that time. The response should be sorted by start time
-    already.
-    """
-    calendar_tz = events_obj["timeZone"]
-    for event in events_obj["items"]:
-        event_start = parse_event_time(event["start"], calendar_tz)
-        if event_start > now:
-            return event_start
-    else:  # no break
-        raise LookupError("All events are before now")
-
-
-def find_event_summaries_starting(events_obj, start):
-    """
-    Find events starting at start in google calendar response and return summaries.
-
-    Events should already be sorted.
-    """
-    calendar_tz = events_obj["timeZone"]
-    for event in events_obj["items"]:
-        event_start = parse_event_time(event["start"], calendar_tz)
-        if event_start > start:
-            break
-        if event_start == start:
-            yield event["summary"]
