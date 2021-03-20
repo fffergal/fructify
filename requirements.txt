@@ -17,7 +17,7 @@ honeycomb-beeline==2.11.4
 idna==2.9
 importlib-resources==3.0.0
 itsdangerous==1.1.0
-jinja2==2.11.2
+jinja2==2.11.3
 libhoney==1.9.0
 markupsafe==1.1.1
 psycopg2-binary==2.8.5
