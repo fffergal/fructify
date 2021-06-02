@@ -25,7 +25,7 @@ pycparser==2.20
 requests==2.23.0
 six==1.14.0
 statsd==3.3.0
-urllib3==1.25.8
+urllib3==1.26.5
 werkzeug==1.0.1
 wrapt==1.12.1
 zipp==3.1.0
