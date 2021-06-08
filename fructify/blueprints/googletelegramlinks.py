@@ -210,67 +210,69 @@ def googletelegramlinks_put():
                                 (external_id, resource_id, sub, google_calendar_id),
                             )
 
-            with beeline.tracer("renewwatchcron maintenance transaction"), connection:
-                with beeline.tracer("cursor"), connection.cursor() as cursor:
-                    with beeline.tracer("renewwatchcron exists query"):
-                        cursor.execute(
-                            """
-                            SELECT
-                                table_name
-                            FROM
-                                information_schema.tables
-                            WHERE
-                                table_name = 'renewwatchcron'
-                            """
-                        )
-                    if not cursor.rowcount:
-                        with beeline.tracer("renewwatchcron create query"):
+                with beeline.tracer(
+                    "renewwatchcron maintenance transaction"
+                ), connection:
+                    with beeline.tracer("cursor"), connection.cursor() as cursor:
+                        with beeline.tracer("renewwatchcron exists query"):
                             cursor.execute(
                                 """
-                                CREATE TABLE
-                                    renewwatchcron (
-                                        sub text,
-                                        external_id text,
-                                        cron_id text
-                                    )
+                                SELECT
+                                    table_name
+                                FROM
+                                    information_schema.tables
+                                WHERE
+                                    table_name = 'renewwatchcron'
                                 """
                             )
-
-            cron_response = requests.get(
-                "https://www.easycron.com/rest/add",
-                params={
-                    "token": os.environ["EASYCRON_KEY"],
-                    "url": url_for(
-                        "renewwatchcron.renewwatchcron",
-                        _external=True,
-                        external_id=external_id,
-                    ),
-                    "cron_expression": f"{response_expiration:%M %H %d %m * %Y}",
-                    "timezone_from": "2",
-                    "timezone": "UTC",
-                },
-            )
-            cron_response.raise_for_status()
-            error = cron_response.json().get("error", {}).get("message")
-            if error:
-                raise Exception(error)
-
-            with beeline.tracer("insert renewwatchcron transaction"), connection:
-                with beeline.tracer("cursor"), connection.cursor() as cursor:
-                    with beeline.tracer("insert renewwatchcron query"):
-                        cursor.execute(
-                            """
-                            INSERT INTO
-                                renewwatchcron (
-                                    sub,
-                                    external_id,
-                                    cron_id
+                        if not cursor.rowcount:
+                            with beeline.tracer("renewwatchcron create query"):
+                                cursor.execute(
+                                    """
+                                    CREATE TABLE
+                                        renewwatchcron (
+                                            sub text,
+                                            external_id text,
+                                            cron_id text
+                                        )
+                                    """
                                 )
-                            VALUES
-                                (%s, %s, %s)
-                            """,
-                            (sub, external_id, cron_response.json()["cron_job_id"]),
-                        )
+
+                cron_response = requests.get(
+                    "https://www.easycron.com/rest/add",
+                    params={
+                        "token": os.environ["EASYCRON_KEY"],
+                        "url": url_for(
+                            "renewwatchcron.renewwatchcron",
+                            _external=True,
+                            external_id=external_id,
+                        ),
+                        "cron_expression": f"{response_expiration:%M %H %d %m * %Y}",
+                        "timezone_from": "2",
+                        "timezone": "UTC",
+                    },
+                )
+                cron_response.raise_for_status()
+                error = cron_response.json().get("error", {}).get("message")
+                if error:
+                    raise Exception(error)
+
+                with beeline.tracer("insert renewwatchcron transaction"), connection:
+                    with beeline.tracer("cursor"), connection.cursor() as cursor:
+                        with beeline.tracer("insert renewwatchcron query"):
+                            cursor.execute(
+                                """
+                                INSERT INTO
+                                    renewwatchcron (
+                                        sub,
+                                        external_id,
+                                        cron_id
+                                    )
+                                VALUES
+                                    (%s, %s, %s)
+                                """,
+                                (sub, external_id, cron_response.json()["cron_job_id"]),
+                            )
         finally:
             connection.close()
     return ({"message": "link created"}, 201)
