@@ -42,7 +42,7 @@ def telegramwebhook():
                     with trace_cm(connection.cursor(), "cursor") as cursor:
                         with beeline.tracer("lookup secret query"):
                             cursor.execute(
-                                "SELECT sub FROM secret WHERE secret = %s", (secret,),
+                                "SELECT sub FROM secret WHERE secret = %s", (secret,)
                             )
                             if cursor.rowcount:
                                 (sub,) = next(cursor)
@@ -173,7 +173,7 @@ def telegramwebhook():
                     with trace_cm(connection.cursor(), "cursor") as cursor:
                         with beeline.tracer("delete secret query"):
                             cursor.execute(
-                                "DELETE FROM secret WHERE secret = %s", (secret,),
+                                "DELETE FROM secret WHERE secret = %s", (secret,)
                             )
                 telegram_response = requests.get(
                     send_message_url,
@@ -187,7 +187,7 @@ def telegramwebhook():
             finally:
                 connection.close()
     telegram_response = requests.get(
-        send_message_url, data={"chat_id": chat_id, "text": f"Received {text}"},
+        send_message_url, data={"chat_id": chat_id, "text": f"Received {text}"}
     )
     telegram_response.raise_for_status()
     return ("", 204)
