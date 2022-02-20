@@ -5,7 +5,7 @@
 #    pip-compile --no-annotate --no-emit-index-url
 #
 authlib==0.14.3
-backports.zoneinfo==0.2.1
+backports-zoneinfo==0.2.1
 blinker==1.4
 certifi==2019.11.28
 cffi==1.15.0
