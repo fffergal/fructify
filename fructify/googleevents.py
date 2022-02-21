@@ -2,7 +2,7 @@
 
 from datetime import datetime, timezone
 
-from backports.zoneinfo import ZoneInfo
+from zoneinfo import ZoneInfo
 
 
 def parse_event_time(time_playload, calendar_tz):
