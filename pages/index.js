@@ -1,4 +1,5 @@
 import Head from "next/head"
+import Link from "next/link"
 
 import DefaultStyle from "../default-style"
 import LoggedIn from "../logged-in"
@@ -11,7 +12,7 @@ export default function Index() {
       </Head>
       <h1>Fructify</h1>
       <LoggedIn>
-        <p><a href="/dashboard">Go to dashboard</a></p>
+        <p><Link href="/dashboard">Go to dashboard</Link></p>
       </LoggedIn>
       <p>Make yourself more fruitful.</p>
       <DefaultStyle/>
