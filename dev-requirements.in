@@ -4,3 +4,4 @@ tox~=3.15
 flake8~=3.7
 black~=21.12b0
 virtualenv!=20.0.10
+python-dotenv~=0.21
