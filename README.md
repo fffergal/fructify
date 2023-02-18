@@ -4,20 +4,10 @@ Webhooks to make me more productive. For use with IFTTT.
 
 ## Quick start
 
-Frucitify is deployed to [Vercel][vercel]. You can use the [CLI][cli] to run a
-local version too.
-
 Secrets are inserted as environment variables. You can see which secrets are
 needed by looking in vercel.json. Put local secrets in a .env file. If you have
 access to LastPass and the lpass CLI installed, you can use make_env.sh to make
 the .env file.
-
-Start a local server with `vercel dev`.
-
-[vercel]: https://vercel.com/
-[cli]: https://vercel.com/download
-
-## Contributing
 
 To work on the application, you will need the dependencies. Make a new
 virtualenv for this project before running the below commands because `pip-sync`
@@ -27,6 +17,14 @@ will remove unneeded dependencies.
 pip install -r dev-requirements.txt
 pip-sync dev-requirements.txt requirements.txt
 ```
+
+Install frontend dependencies with `npm ci`.
+
+Run `npm run dev` to start the frontend, and `flask --app api.index --debug` in
+a different shell to start the backend. You can now use the local version at
+http://localhost:3000.
+
+## Contributing
 
 Vercel can make a separate Lambda for every file in the api directory, but this
 project uses a single Flask app in api/index.py imported from the fructify
@@ -49,4 +47,7 @@ dependencies. Consider running these yourself before making a pull request.
 This project uses the Apache License 2.0. You will be credited in the git
 history, but for ease of maintenance copyright stays with the maintainer.
 
-Each push to master is deployed.
+Frucitify is deployed to [Vercel][vercel], every merge to master is deployed
+to https://fructify.app, and each PR has preview.
+
+[vercel]: https://vercel.com/

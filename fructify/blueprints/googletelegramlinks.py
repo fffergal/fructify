@@ -32,7 +32,6 @@ def googletelegramlinks_put():
         with beeline.tracer("open db connection"):
             connection = psycopg2.connect(os.environ["POSTGRES_DSN"])
         try:
-
             with beeline.tracer("check chat ownership transaction"), connection:
                 with beeline.tracer("cursor"), connection.cursor() as cursor:
                     with beeline.tracer("check chat ownership query"):
@@ -294,7 +293,6 @@ def googletelegramlinks_get():
         with beeline.tracer("open db connection"):
             connection = psycopg2.connect(os.environ["POSTGRES_DSN"])
         try:
-
             with beeline.tracer("calendar chat link transaction"), connection:
                 with beeline.tracer("cursor"), connection.cursor() as cursor:
                     with beeline.tracer("calendar chat link query"):

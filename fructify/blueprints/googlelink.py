@@ -1,4 +1,4 @@
-from flask import Blueprint, request, session
+from flask import Blueprint, session, url_for
 
 from fructify.auth import oauth
 
@@ -10,5 +10,5 @@ bp = Blueprint("googlelink", __name__)
 def googlelink():
     assert session.get("profile", {}).get("user_id")
     return oauth.google.authorize_redirect(
-        redirect_uri=f"{request.url_root}api/v1/googlecallback"
+        redirect_uri=url_for("googlecallback.googlecallback", _external=True)
     )
