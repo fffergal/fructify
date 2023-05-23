@@ -21,7 +21,7 @@ libhoney==1.9.0
 markupsafe==2.1.2
 psycopg2-binary==2.9.2
 pycparser==2.20
-requests==2.25.1
+requests==2.31.0
 six==1.14.0
 statsd==3.3.0
 urllib3==1.26.5
