@@ -8,7 +8,7 @@ authlib==0.14.3
 blinker==1.6.2
 certifi==2022.12.7
 cffi==1.15.0
-chardet==3.0.4
+charset-normalizer==3.1.0
 click==8.1.3
 cryptography==39.0.1
 flask==2.3.2
@@ -21,7 +21,7 @@ libhoney==1.9.0
 markupsafe==2.1.2
 psycopg2-binary==2.9.2
 pycparser==2.20
-requests==2.25.1
+requests==2.31.0
 six==1.14.0
 statsd==3.3.0
 urllib3==1.26.5
