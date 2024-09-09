@@ -4,7 +4,7 @@ setup(
     name="fructify",
     packages=find_packages(exclude=["tests.*"]),
     install_requires=[
-        "authlib>=0.14,<2.0",
+        "authlib~=0.14",
         "blinker~=1.4",
         "flask~=2.2",
         "honeycomb-beeline~=2.11",
