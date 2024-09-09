@@ -27,4 +27,4 @@ statsd==3.3.0
 urllib3==1.26.18
 werkzeug==3.0.3
 wrapt==1.12.1
-zipp==3.14.0
+zipp==3.19.1
