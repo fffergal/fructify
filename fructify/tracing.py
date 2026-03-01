@@ -12,17 +12,65 @@ import wrapt
 
 tracer = trace.get_tracer("fructify")
 
+# Env vars whose values should be redacted from span attributes.
+ENV_SECRETS = [
+    "HONEYCOMB_KEY",
+    "TELEGRAM_KEY",
+    "TELEGRAM_BOT_WEBHOOK_TOKEN",
+    "IFTTT_KEY",
+    "EASYCRON_KEY",
+    "POSTGRES_DSN",
+]
+
+
+def _sanitize(secrets, value):
+    """Replace secret values in a string with their env var name."""
+    if not isinstance(value, str):
+        return value
+    for key, secret in secrets.items():
+        if secret:
+            value = value.replace(secret, f"<{key}>")
+    return value
+
+
+def _make_flask_request_hook(secrets):
+    def request_hook(span, environ):
+        vercel_id = environ.get("HTTP_X_VERCEL_ID")
+        if vercel_id and span and span.is_recording():
+            span.set_attribute("vercel_id", vercel_id)
+        if span and span.is_recording():
+            target = (span.attributes or {}).get("http.target")
+            if isinstance(target, str):
+                sanitized = _sanitize(secrets, target)
+                if sanitized != target:
+                    span.set_attribute("http.target", sanitized)
+
+    return request_hook
+
+
+def _make_requests_hook(secrets):
+    def request_hook(span, request):
+        if span and span.is_recording() and request.url:
+            sanitized = _sanitize(secrets, request.url)
+            if sanitized != request.url:
+                span.set_attribute("http.url", sanitized)
+
+    return request_hook
+
 
 def with_flask_tracing(app):
     # Be as lazy as possible because vercel does some forking.
-    FlaskInstrumentor().instrument_app(app)
-    RequestsInstrumentor().instrument()
+    secrets = {k: os.environ.get(k, "") for k in ENV_SECRETS}
+    FlaskInstrumentor().instrument_app(
+        app, request_hook=_make_flask_request_hook(secrets)
+    )
+    RequestsInstrumentor().instrument(request_hook=_make_requests_hook(secrets))
     original_wsgi_app = app.wsgi_app
 
     def inited_app(environ, start_response):
         if not with_flask_tracing.otel_inited:
             resource_attrs = {"service.name": "fructify"}
-            for field in ["VERCEL_REGION", "VERCEL_GITHUB_COMMIT_SHA"]:
+            for field in ["NOW_REGION", "VERCEL_REGION", "VERCEL_GITHUB_COMMIT_SHA"]:
                 if field in os.environ:
                     resource_attrs[field.lower()] = os.environ[field]
             provider = TracerProvider(resource=Resource(resource_attrs))

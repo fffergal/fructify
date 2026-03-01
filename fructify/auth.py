@@ -47,14 +47,16 @@ def update_google_token(token, refresh_token=None, access_token=None):
             with trace_cm(connection, "google table maint transaction"):
                 with trace_cm(connection.cursor(), "cursor") as cursor:
                     with tracer.start_as_current_span("google table exists query"):
-                        cursor.execute("""
+                        cursor.execute(
+                            """
                             SELECT
                                 table_name
                             FROM
                                 information_schema.tables
                             WHERE
                                 table_name = 'google'
-                            """)
+                            """
+                        )
                     if not cursor.rowcount:
                         with tracer.start_as_current_span("google table create query"):
                             cursor.execute(

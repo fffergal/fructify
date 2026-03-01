@@ -91,19 +91,22 @@ def googlecalendarwebhook():
                     with tracer.start_as_current_span(
                         "calendarcron table exists query"
                     ):
-                        cursor.execute("""
+                        cursor.execute(
+                            """
                             SELECT
                                 table_name
                             FROM
                                 information_schema.tables
                             WHERE
                                 table_name = 'calendarcron'
-                            """)
+                            """
+                        )
                     if not cursor.rowcount:
                         with tracer.start_as_current_span(
                             "create calendarcron table query"
                         ):
-                            cursor.execute("""
+                            cursor.execute(
+                                """
                                 CREATE TABLE
                                     calendarcron (
                                         sub text,
@@ -112,7 +115,8 @@ def googlecalendarwebhook():
                                         cron_id text,
                                         next_event_start_time timestamp
                                     )
-                                """)
+                                """
+                            )
             with tracer.start_as_current_span(
                 "check next cron transaction"
             ), connection:
@@ -235,26 +239,30 @@ def googlecalendarwebhook():
                         with tracer.start_as_current_span(
                             "event_details table exists query"
                         ):
-                            cursor.execute("""
+                            cursor.execute(
+                                """
                                 SELECT
                                     table_name
                                 FROM
                                     information_schema.tables
                                 WHERE
                                     table_name = 'event_details'
-                                """)
+                                """
+                            )
                             if not cursor.rowcount:
                                 with tracer.start_as_current_span(
                                     "create event_details table query"
                                 ):
-                                    cursor.execute("""
+                                    cursor.execute(
+                                        """
                                         CREATE TABLE
                                             event_details (
                                                 calendar_type text,
                                                 calendar_id text,
                                                 summary text
                                             )
-                                        """)
+                                        """
+                                    )
                 with tracer.start_as_current_span(
                     "update event_details transaction"
                 ), connection:

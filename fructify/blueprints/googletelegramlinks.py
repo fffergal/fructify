@@ -60,19 +60,22 @@ def googletelegramlinks_put():
                     "cursor"
                 ), connection.cursor() as cursor:
                     with tracer.start_as_current_span("calendarchatlink exists query"):
-                        cursor.execute("""
+                        cursor.execute(
+                            """
                             SELECT
                                 table_name
                             FROM
                                 information_schema.tables
                             WHERE
                                 table_name = 'calendarchatlink'
-                            """)
+                            """
+                        )
                     if not cursor.rowcount:
                         with tracer.start_as_current_span(
                             "create calendatchatlink table query"
                         ):
-                            cursor.execute("""
+                            cursor.execute(
+                                """
                                 CREATE TABLE
                                     calendarchatlink (
                                         external_id text,
@@ -82,7 +85,8 @@ def googletelegramlinks_put():
                                         chat_id text,
                                         chat_type text
                                     )
-                                """)
+                                """
+                            )
 
             with tracer.start_as_current_span(
                 "googlewatch maintenance transaction"
@@ -91,19 +95,22 @@ def googletelegramlinks_put():
                     "cursor"
                 ), connection.cursor() as cursor:
                     with tracer.start_as_current_span("googlewatch exists query"):
-                        cursor.execute("""
+                        cursor.execute(
+                            """
                             SELECT
                                 table_name
                             FROM
                                 information_schema.tables
                             WHERE
                                 table_name = 'googlewatch'
-                            """)
+                            """
+                        )
                     if not cursor.rowcount:
                         with tracer.start_as_current_span(
                             "create googlewatch table query"
                         ):
-                            cursor.execute("""
+                            cursor.execute(
+                                """
                                 CREATE TABLE
                                     googlewatch (
                                         external_id text,
@@ -111,7 +118,8 @@ def googletelegramlinks_put():
                                         sub text,
                                         calendar_id text
                                     )
-                                """)
+                                """
+                            )
 
             with tracer.start_as_current_span(
                 "google telegram link exists transaction"
@@ -245,26 +253,30 @@ def googletelegramlinks_put():
                         with tracer.start_as_current_span(
                             "renewwatchcron exists query"
                         ):
-                            cursor.execute("""
+                            cursor.execute(
+                                """
                                 SELECT
                                     table_name
                                 FROM
                                     information_schema.tables
                                 WHERE
                                     table_name = 'renewwatchcron'
-                                """)
+                                """
+                            )
                         if not cursor.rowcount:
                             with tracer.start_as_current_span(
                                 "renewwatchcron create query"
                             ):
-                                cursor.execute("""
+                                cursor.execute(
+                                    """
                                     CREATE TABLE
                                         renewwatchcron (
                                             sub text,
                                             external_id text,
                                             cron_id text
                                         )
-                                    """)
+                                    """
+                                )
 
                 cron_response = requests.get(
                     "https://www.easycron.com/rest/add",

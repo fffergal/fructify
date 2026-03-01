@@ -22,24 +22,28 @@ def telegramdeeplink():
             with trace_cm(connection, "secret table exists transaction"):
                 with trace_cm(connection.cursor(), "cursor") as cursor:
                     with tracer.start_as_current_span("secret table exists query"):
-                        cursor.execute("""
+                        cursor.execute(
+                            """
                             SELECT
                                 table_name
                             FROM
                                 information_schema.tables
                             WHERE
                                 table_name = 'secret'
-                            """)
+                            """
+                        )
                     if not cursor.rowcount:
                         with tracer.start_as_current_span("create secret table query"):
-                            cursor.execute("""
+                            cursor.execute(
+                                """
                                 CREATE TABLE
                                     secret (
                                         sub text,
                                         secret text,
                                         expires timestamp
                                     )
-                                """)
+                                """
+                            )
             with trace_cm(connection, "delete expired secrets transaction"):
                 with trace_cm(connection.cursor(), "cursor") as cursor:
                     with tracer.start_as_current_span("delete expired secrets query"):
