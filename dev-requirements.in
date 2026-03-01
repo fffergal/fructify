@@ -1,6 +1,6 @@
 -c requirements.txt
 pip-tools~=7.4
-tox~=3.15
+tox~=4.0
 flake8~=7.0
 black~=24.3
 virtualenv!=20.0.10

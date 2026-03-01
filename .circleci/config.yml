@@ -15,7 +15,7 @@ jobs:
       - run: git diff --exit-code -- dev-requirements.txt requirements.txt
   test_javascript:
     docker:
-      - image: cimg/node:22.14
+      - image: cimg/node:22
     steps:
       - checkout
       - run: npm ci

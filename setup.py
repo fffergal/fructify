@@ -10,7 +10,7 @@ setup(
         "honeycomb-beeline~=2.11",
         "psycopg2-binary~=2.9",
         "requests~=2.23",
-        "wrapt~=1.12",
+        "wrapt~=1.16",
     ],
     test_suite="tests",
 )

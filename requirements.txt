@@ -21,8 +21,8 @@ markupsafe==2.1.2
 psycopg2-binary==2.9.11
 pycparser==2.20
 requests==2.32.0
-six==1.14.0
+six==1.17.0
 statsd==3.3.0
 urllib3==1.26.18
 werkzeug==3.0.3
-wrapt==1.12.1
+wrapt==1.17.3
