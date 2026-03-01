@@ -1,6 +1,13 @@
 from contextlib import contextmanager
 import os
 
+import flask.signals
+
+# flask.signals.signals_available was removed in Flask 3.x (blinker is now
+# always required), but honeycomb-beeline still references it.
+if not hasattr(flask.signals, "signals_available"):
+    flask.signals.signals_available = True
+
 from beeline.middleware.flask import HoneyMiddleware
 from beeline.patch import requests  # noqa
 from flask import request
