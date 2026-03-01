@@ -9,6 +9,7 @@ from flask import Blueprint, request, session, url_for
 
 from fructify.auth import oauth
 
+
 bp = Blueprint("googletelegramlinks", __name__)
 
 

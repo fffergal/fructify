@@ -4,6 +4,7 @@ import os
 from flask import Blueprint, request
 import requests
 
+
 GCAL_DATETIME_FORMAT = "%B %d, %Y at %I:%M%p"
 TRELLO_USERS_TO_NAMES = {"@fffergal": "Fergal", "@annaarmstrong11": "Anna"}
 

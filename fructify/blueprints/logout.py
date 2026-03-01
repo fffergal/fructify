@@ -5,6 +5,7 @@ from flask import Blueprint, redirect, request, session
 
 from fructify.auth import oauth
 
+
 bp = Blueprint("logout", __name__)
 
 

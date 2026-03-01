@@ -13,6 +13,7 @@ from fructify.auth import oauth
 from fructify.blueprints.calendarcron import parse_event_time
 from fructify.googleevents import find_event_summaries_starting, find_next_event_start
 
+
 bp = Blueprint("googlecalendarwebhook", __name__)
 
 

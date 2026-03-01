@@ -9,6 +9,7 @@ from flask import Blueprint, g, request, url_for
 from fructify.auth import oauth
 from fructify.constants import EASYCRON_IPS
 
+
 bp = Blueprint("renewwatchcron", __name__)
 
 

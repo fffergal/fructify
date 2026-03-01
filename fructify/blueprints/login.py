@@ -2,6 +2,7 @@ from flask import Blueprint, url_for
 
 from fructify.auth import oauth
 
+
 bp = Blueprint("login", __name__)
 
 

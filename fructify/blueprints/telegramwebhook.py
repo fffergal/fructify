@@ -9,6 +9,7 @@ import requests
 from fructify.help import unwrap_heredoc
 from fructify.tracing import trace_cm
 
+
 bp = Blueprint("telegramwebhook", __name__)
 
 

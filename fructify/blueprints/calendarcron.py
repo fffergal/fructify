@@ -16,6 +16,7 @@ from fructify.googleevents import (
     parse_event_time,
 )
 
+
 bp = Blueprint("calendarcron", __name__)
 
 

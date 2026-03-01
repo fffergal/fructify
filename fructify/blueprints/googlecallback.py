@@ -7,6 +7,7 @@ from flask import Blueprint, redirect, session
 from fructify.auth import oauth, update_google_token
 from fructify.tracing import trace_call, trace_cm
 
+
 bp = Blueprint("googlecallback", __name__)
 
 

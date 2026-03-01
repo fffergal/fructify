@@ -4,6 +4,7 @@ import os
 from flask import Blueprint, request
 import requests
 
+
 bp = Blueprint("days_until", __name__)
 
 

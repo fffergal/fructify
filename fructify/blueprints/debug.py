@@ -1,5 +1,6 @@
 from flask import Blueprint, request
 
+
 bp = Blueprint("debug", __name__)
 
 

@@ -1,103 +1,112 @@
 from contextlib import contextmanager
 import os
+from types import SimpleNamespace
 
 from opentelemetry import trace
 from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
 from opentelemetry.instrumentation.flask import FlaskInstrumentor
 from opentelemetry.instrumentation.requests import RequestsInstrumentor
 from opentelemetry.sdk.resources import Resource
-from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace import SpanProcessor, TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 import wrapt
 
 tracer = trace.get_tracer("fructify")
 
-# Env vars whose values should be redacted from span attributes.
-ENV_SECRETS = [
-    "HONEYCOMB_KEY",
-    "TELEGRAM_KEY",
-    "TELEGRAM_BOT_WEBHOOK_TOKEN",
-    "IFTTT_KEY",
-    "EASYCRON_KEY",
-    "POSTGRES_DSN",
-]
+# OpenTelemetry uses globals, so need to keep track of tracing init globally.
+tracing_inited_holder = SimpleNamespace(inited=False, processor=None)
 
 
-def _sanitize(secrets, value):
-    """Replace secret values in a string with their env var name."""
-    if not isinstance(value, str):
-        return value
-    for key, secret in secrets.items():
-        if secret:
-            value = value.replace(secret, f"<{key}>")
-    return value
+class SanitizingSpanProcessor(SpanProcessor):
+    """Replace secret env var values in all span attributes before export."""
+
+    def __init__(self):
+        self.secrets = {}
+        for key, value in os.environ.items():
+            if key.upper().endswith(("KEY", "TOKEN")) or key == "POSTGRES_DSN":
+                if value:
+                    self.secrets[key] = value
+
+    def on_start(self, span, parent_context=None):
+        pass
+
+    def on_end(self, span):
+        if not span._attributes:
+            return
+        for k in list(span._attributes.keys()):
+            v = span._attributes[k]
+            if isinstance(v, str):
+                new_v = v
+                for key, secret in self.secrets.items():
+                    new_v = new_v.replace(secret, f"<{key}>")
+                if new_v != v:
+                    # span.attributes is a read-only MappingProxy once the span
+                    # has ended, but span._attributes is still mutable at
+                    # processor time (before BatchSpanProcessor serialises it).
+                    span._attributes[k] = new_v
+
+    def shutdown(self):
+        pass
+
+    def force_flush(self, timeout_millis=None):
+        pass
 
 
-def _make_flask_request_hook(secrets):
-    def request_hook(span, environ):
-        vercel_id = environ.get("HTTP_X_VERCEL_ID")
-        if vercel_id and span and span.is_recording():
-            span.set_attribute("vercel_id", vercel_id)
-        if span and span.is_recording():
-            target = (span.attributes or {}).get("http.target")
-            if isinstance(target, str):
-                sanitized = _sanitize(secrets, target)
-                if sanitized != target:
-                    span.set_attribute("http.target", sanitized)
-
-    return request_hook
+def _flask_request_hook(span, environ):
+    vercel_id = environ.get("HTTP_X_VERCEL_ID")
+    if vercel_id and span and span.is_recording():
+        span.set_attribute("vercel_id", vercel_id)
 
 
-def _make_requests_hook(secrets):
-    def request_hook(span, request):
-        if span and span.is_recording() and request.url:
-            sanitized = _sanitize(secrets, request.url)
-            if sanitized != request.url:
-                span.set_attribute("http.url", sanitized)
+def init_tracing():
+    """
+    Init OTel tracing.
 
-    return request_hook
+    This is a bit different to the OpenTelemetry Python examples because Vercel does
+    some forking and it needs to be handled without knowing which app runner is being
+    used.
+
+    To be used with Flask's before_request.
+    """
+    if not tracing_inited_holder.inited:
+        tracing_inited_holder.inited = True
+        resource_attrs = {"service.name": "fructify"}
+        for field in ["NOW_REGION", "VERCEL_REGION", "VERCEL_GITHUB_COMMIT_SHA"]:
+            if field in os.environ:
+                resource_attrs[field.lower()] = os.environ[field]
+        provider = TracerProvider(resource=Resource(resource_attrs))
+        provider.add_span_processor(SanitizingSpanProcessor())
+        batch_processor = BatchSpanProcessor(
+            OTLPSpanExporter(
+                endpoint="https://api.honeycomb.io/v1/traces",
+                headers={
+                    "x-honeycomb-team": os.environ["HONEYCOMB_KEY"],
+                    "x-honeycomb-dataset": "fructify",
+                },
+            )
+        )
+        provider.add_span_processor(batch_processor)
+        trace.set_tracer_provider(provider)
+        tracing_inited_holder.processor = batch_processor
+
+
+def flush_tracing(exc):
+    """
+    Flush the OTel processor.
+
+    To be used with Flask's teardown_request. Needed because Vercel can suspend the
+    thread before flushing.
+    """
+    if tracing_inited_holder.processor:
+        tracing_inited_holder.processor.force_flush()
 
 
 def with_flask_tracing(app):
-    # Be as lazy as possible because vercel does some forking.
-    secrets = {k: os.environ.get(k, "") for k in ENV_SECRETS}
-    FlaskInstrumentor().instrument_app(
-        app, request_hook=_make_flask_request_hook(secrets)
-    )
-    RequestsInstrumentor().instrument(request_hook=_make_requests_hook(secrets))
-    original_wsgi_app = app.wsgi_app
-
-    def inited_app(environ, start_response):
-        if not with_flask_tracing.otel_inited:
-            resource_attrs = {"service.name": "fructify"}
-            for field in ["NOW_REGION", "VERCEL_REGION", "VERCEL_GITHUB_COMMIT_SHA"]:
-                if field in os.environ:
-                    resource_attrs[field.lower()] = os.environ[field]
-            provider = TracerProvider(resource=Resource(resource_attrs))
-            provider.add_span_processor(
-                BatchSpanProcessor(
-                    OTLPSpanExporter(
-                        endpoint="https://api.honeycomb.io/v1/traces",
-                        headers={"x-honeycomb-team": os.environ["HONEYCOMB_KEY"]},
-                    )
-                )
-            )
-            trace.set_tracer_provider(provider)
-            with_flask_tracing.provider = provider
-            with_flask_tracing.otel_inited = True
-        try:
-            return original_wsgi_app(environ, start_response)
-        finally:
-            # Always flush because vercel can suspend the process.
-            if with_flask_tracing.provider:
-                with_flask_tracing.provider.force_flush()
-
-    app.wsgi_app = inited_app
+    FlaskInstrumentor().instrument_app(app, request_hook=_flask_request_hook)
+    RequestsInstrumentor().instrument()
+    app.before_request(init_tracing)
+    app.teardown_request(flush_tracing)
     return app
-
-
-with_flask_tracing.otel_inited = False
-with_flask_tracing.provider = None
 
 
 @contextmanager

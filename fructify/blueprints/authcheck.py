@@ -1,5 +1,6 @@
 from flask import Blueprint, session
 
+
 bp = Blueprint("authcheck", __name__)
 
 

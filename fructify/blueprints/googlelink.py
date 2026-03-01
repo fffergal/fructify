@@ -2,6 +2,7 @@ from flask import Blueprint, session, url_for
 
 from fructify.auth import oauth
 
+
 bp = Blueprint("googlelink", __name__)
 
 
