@@ -1,88 +1,77 @@
 from contextlib import contextmanager
 import os
 
-import flask.signals
-
-# flask.signals.signals_available was removed in Flask 3.x (blinker is now
-# always required), but honeycomb-beeline still references it.
-if not hasattr(flask.signals, "signals_available"):
-    flask.signals.signals_available = True
-
-from beeline.middleware.flask import HoneyMiddleware
-from beeline.patch import requests  # noqa
-from flask import request
-import beeline
+from opentelemetry import trace
+from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
+from opentelemetry.instrumentation.flask import FlaskInstrumentor
+from opentelemetry.instrumentation.requests import RequestsInstrumentor
+from opentelemetry.sdk.resources import Resource
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import BatchSpanProcessor
 import wrapt
+
+tracer = trace.get_tracer("fructify")
 
 
 def with_flask_tracing(app):
     # Be as lazy as possible because vercel does some forking.
-    HoneyMiddleware(app)
+    FlaskInstrumentor().instrument_app(app)
+    RequestsInstrumentor().instrument()
     original_wsgi_app = app.wsgi_app
 
     def inited_app(environ, start_response):
-        if not with_flask_tracing.beeline_inited:
-            beeline.init(
-                writekey=os.environ["HONEYCOMB_KEY"],
-                dataset="IFTTT webhooks",
-                service_name="fructify",
-                presend_hook=presend,
+        if not with_flask_tracing.otel_inited:
+            resource_attrs = {"service.name": "fructify"}
+            for field in ["VERCEL_REGION", "VERCEL_GITHUB_COMMIT_SHA"]:
+                if field in os.environ:
+                    resource_attrs[field.lower()] = os.environ[field]
+            provider = TracerProvider(resource=Resource(resource_attrs))
+            provider.add_span_processor(
+                BatchSpanProcessor(
+                    OTLPSpanExporter(
+                        endpoint="https://api.honeycomb.io/v1/traces",
+                        headers={"x-honeycomb-team": os.environ["HONEYCOMB_KEY"]},
+                    )
+                )
             )
-            with_flask_tracing.beeline_inited = True
+            trace.set_tracer_provider(provider)
+            with_flask_tracing.provider = provider
+            with_flask_tracing.otel_inited = True
         try:
             return original_wsgi_app(environ, start_response)
         finally:
             # Always flush because vercel can suspend the process.
-            beeline.get_beeline().client.flush()
+            if with_flask_tracing.provider:
+                with_flask_tracing.provider.force_flush()
 
     app.wsgi_app = inited_app
     return app
 
 
-with_flask_tracing.beeline_inited = False
-
-
-def presend(fields):
-    """Mutate fields, removing sensitive values and adding global fields."""
-    sensitives = {
-        key: value
-        for key, value in os.environ.items()
-        if key.upper().endswith(("KEY", "TOKEN"))
-    }
-    for key in fields:
-        if type(fields[key]) is str:
-            for sensitive_key, sensitive in sensitives.items():
-                fields[key] = fields[key].replace(sensitive, f"<{sensitive_key}>")
-    for global_field in ["NOW_REGION", "VERCEL_REGION", "VERCEL_GITHUB_COMMIT_SHA"]:
-        if global_field in os.environ:
-            fields[global_field] = os.environ[global_field]
-    if "x-vercel-id" in request.headers:
-        fields["vercel_id"] = request.headers["x-vercel-id"]
+with_flask_tracing.otel_inited = False
+with_flask_tracing.provider = None
 
 
 @contextmanager
-def trace_cm(cm, *args, **kwargs):
+def trace_cm(cm, name):
     """
     Add tracing around an existing context manager.
-
-    The args and kwargs are passed to beeline.tracer.
     """
-    with beeline.tracer(*args, **kwargs):
+    with tracer.start_as_current_span(name):
         with cm as cm_obj:
             yield cm_obj
 
 
-def trace_call(*beeline_args, **beeline_kwargs):
+def trace_call(span_name):
     """
     Make a decorator which adds tracing around a function when called.
 
-    Useful for functions that can take a long time to turn, like DB queries.
-    beeline_args and beeline_kwargs are passed to beeline.tracer.
+    Useful for functions that can take a long time to run, like DB queries.
     """
 
     @wrapt.decorator
     def trace_and_call(wrapped, instance, args, kwargs):
-        with beeline.tracer(*beeline_args, **beeline_kwargs):
+        with tracer.start_as_current_span(span_name):
             return wrapped(*args, **kwargs)
 
     return trace_and_call

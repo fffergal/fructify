@@ -1,7 +1,7 @@
 import os
 from datetime import datetime, timedelta
 
-import beeline
+from fructify.tracing import tracer
 import psycopg2
 import requests
 from flask import Blueprint, g, request, url_for
@@ -17,13 +17,13 @@ bp = Blueprint("renewwatchcron", __name__)
 def renewwatchcron():
     assert request.remote_addr in EASYCRON_IPS
     external_id = request.args["external_id"]
-    with beeline.tracer("db connection"):
+    with tracer.start_as_current_span("db connection"):
         try:
-            with beeline.tracer("open db connection"):
+            with tracer.start_as_current_span("open db connection"):
                 connection = psycopg2.connect(os.environ["POSTGRES_DSN"])
-            with beeline.tracer("find renewwatchcron transaction"), connection:
-                with beeline.tracer("cursor"), connection.cursor() as cursor:
-                    with beeline.tracer("find renewwatchcron query"):
+            with tracer.start_as_current_span("find renewwatchcron transaction"), connection:
+                with tracer.start_as_current_span("cursor"), connection.cursor() as cursor:
+                    with tracer.start_as_current_span("find renewwatchcron query"):
                         cursor.execute(
                             """
                             SELECT
@@ -37,9 +37,9 @@ def renewwatchcron():
                         )
                     assert cursor.rowcount
                     g.sub, cron_id = next(cursor)
-            with beeline.tracer("find googlewatch transaction"):
-                with beeline.tracer("cursor"), connection.cursor() as cursor:
-                    with beeline.tracer("find googlewatch query"):
+            with tracer.start_as_current_span("find googlewatch transaction"):
+                with tracer.start_as_current_span("cursor"), connection.cursor() as cursor:
+                    with tracer.start_as_current_span("find googlewatch query"):
                         cursor.execute(
                             """
                             SELECT

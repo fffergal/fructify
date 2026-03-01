@@ -1,7 +1,7 @@
 import os
 
 from flask import Blueprint, session
-import beeline
+from fructify.tracing import tracer
 import psycopg2
 
 from fructify.tracing import trace_cm
@@ -14,13 +14,13 @@ bp = Blueprint("googlecheck", __name__)
 def googlecheck():
     sub = session.get("profile", {}).get("user_id")
     assert sub
-    with beeline.tracer("db connection"):
-        with beeline.tracer("open db connection"):
+    with tracer.start_as_current_span("db connection"):
+        with tracer.start_as_current_span("open db connection"):
             connection = psycopg2.connect(os.environ["POSTGRES_DSN"])
         try:
             with trace_cm(connection, "lookup google transaction"):
                 with trace_cm(connection.cursor(), "cursor") as cursor:
-                    with beeline.tracer("lookup google query"):
+                    with tracer.start_as_current_span("lookup google query"):
                         cursor.execute(
                             """
                             SELECT

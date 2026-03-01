@@ -1,6 +1,6 @@
 import os
 
-import beeline
+from fructify.tracing import tracer
 import psycopg2
 
 from flask import Blueprint, redirect, session
@@ -16,18 +16,18 @@ def googlecallback():
     token = oauth.google.authorize_access_token()
     update_google_token(token)
     userinfo = oauth.google.parse_id_token(token)
-    with beeline.tracer("db connection"):
-        with beeline.tracer("open db connection"):
+    with tracer.start_as_current_span("db connection"):
+        with tracer.start_as_current_span("open db connection"):
             connection = psycopg2.connect(os.environ["POSTGRES_DSN"])
         try:
             with trace_cm(connection, "link table maint transaction"):
                 with trace_cm(connection.cursor(), "link table maint cursor") as cursor:
-                    with beeline.tracer("link table exists query"):
+                    with tracer.start_as_current_span("link table exists query"):
                         cursor.execute(
                             "SELECT table_name FROM information_schema.tables"
                         )
                     if ("link",) not in list(cursor):
-                        with beeline.tracer("link table create query"):
+                        with tracer.start_as_current_span("link table create query"):
                             cursor.execute(
                                 """
                                 CREATE TABLE

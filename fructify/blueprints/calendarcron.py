@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 
 import psycopg2
 import requests
-from beeline import tracer
+from fructify.tracing import tracer
 from flask import Blueprint, g, request, url_for
 from psycopg2.extras import execute_values
 
@@ -30,13 +30,13 @@ def calendarcron():
     cron_start_time = datetime.strptime(
         request.args["next_event_start_time"], "%Y-%m-%dT%H:%M:%S"
     )
-    with tracer("db connection"):
+    with tracer.start_as_current_span("db connection"):
         try:
-            with tracer("open db connection"):
+            with tracer.start_as_current_span("open db connection"):
                 connection = psycopg2.connect(os.environ["POSTGRES_DSN"])
-            with tracer("find calendar cron transaction"), connection:
-                with tracer("cursor"), connection.cursor() as cursor:
-                    with tracer("find calendar cron query"):
+            with tracer.start_as_current_span("find calendar cron transaction"), connection:
+                with tracer.start_as_current_span("cursor"), connection.cursor() as cursor:
+                    with tracer.start_as_current_span("find calendar cron query"):
                         cursor.execute(
                             """
                             SELECT
@@ -74,9 +74,9 @@ def calendarcron():
                     break
             else:  # no break
                 return ("", 204)
-            with tracer("update cron time transaction"), connection:
-                with tracer("cursor"), connection.cursor() as cursor:
-                    with tracer("update cron time query"):
+            with tracer.start_as_current_span("update cron time transaction"), connection:
+                with tracer.start_as_current_span("cursor"), connection.cursor() as cursor:
+                    with tracer.start_as_current_span("update cron time query"):
                         cursor.execute(
                             """
                             UPDATE
@@ -114,9 +114,9 @@ def calendarcron():
                 start = parse_event_time(event["start"], calendar_tz)
                 if cron_start_time <= start <= now:
                     events_to_send.append(event)
-            with tracer("find calendar chats transaction"), connection:
-                with tracer("cursor"), connection.cursor() as cursor:
-                    with tracer("find calendar chats query"):
+            with tracer.start_as_current_span("find calendar chats transaction"), connection:
+                with tracer.start_as_current_span("cursor"), connection.cursor() as cursor:
+                    with tracer.start_as_current_span("find calendar chats query"):
                         cursor.execute(
                             """
                             SELECT
@@ -141,9 +141,9 @@ def calendarcron():
                     pass
                 else:
                     summaries = find_event_summaries_starting(events_obj, events_start)
-                    with tracer("event_details table exists transaction"), connection:
-                        with tracer("cursor"), connection.cursor() as cursor:
-                            with tracer("event_details table exists query"):
+                    with tracer.start_as_current_span("event_details table exists transaction"), connection:
+                        with tracer.start_as_current_span("cursor"), connection.cursor() as cursor:
+                            with tracer.start_as_current_span("event_details table exists query"):
                                 cursor.execute(
                                     """
                                     SELECT
@@ -155,7 +155,7 @@ def calendarcron():
                                     """
                                 )
                                 if not cursor.rowcount:
-                                    with tracer("create event_details table query"):
+                                    with tracer.start_as_current_span("create event_details table query"):
                                         cursor.execute(
                                             """
                                             CREATE TABLE
@@ -166,9 +166,9 @@ def calendarcron():
                                                 )
                                             """
                                         )
-                    with tracer("update event_details transaction"), connection:
-                        with tracer("cursor"), connection.cursor() as cursor:
-                            with tracer("clear event_details query"):
+                    with tracer.start_as_current_span("update event_details transaction"), connection:
+                        with tracer.start_as_current_span("cursor"), connection.cursor() as cursor:
+                            with tracer.start_as_current_span("clear event_details query"):
                                 cursor.execute(
                                     """
                                     DELETE FROM
@@ -179,7 +179,7 @@ def calendarcron():
                                     """,
                                     (calendar_id,),
                                 )
-                            with tracer("insert event_details query"):
+                            with tracer.start_as_current_span("insert event_details query"):
                                 execute_values(
                                     cursor,
                                     """
@@ -199,7 +199,7 @@ def calendarcron():
         finally:
             connection.close()
     summaries = concat_unique([e["summary"] for e in events_to_send], [])
-    with tracer("telegram sends"):
+    with tracer.start_as_current_span("telegram sends"):
         for (chat_id,) in rows:
             telegram_response = requests.get(
                 f"https://api.telegram.org/bot{telegram_key}/sendMessage",
