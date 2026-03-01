@@ -16,7 +16,6 @@ from fructify.googleevents import (
     parse_event_time,
 )
 
-
 bp = Blueprint("calendarcron", __name__)
 
 
@@ -34,8 +33,12 @@ def calendarcron():
         try:
             with tracer.start_as_current_span("open db connection"):
                 connection = psycopg2.connect(os.environ["POSTGRES_DSN"])
-            with tracer.start_as_current_span("find calendar cron transaction"), connection:
-                with tracer.start_as_current_span("cursor"), connection.cursor() as cursor:
+            with tracer.start_as_current_span(
+                "find calendar cron transaction"
+            ), connection:
+                with tracer.start_as_current_span(
+                    "cursor"
+                ), connection.cursor() as cursor:
                     with tracer.start_as_current_span("find calendar cron query"):
                         cursor.execute(
                             """
@@ -74,8 +77,12 @@ def calendarcron():
                     break
             else:  # no break
                 return ("", 204)
-            with tracer.start_as_current_span("update cron time transaction"), connection:
-                with tracer.start_as_current_span("cursor"), connection.cursor() as cursor:
+            with tracer.start_as_current_span(
+                "update cron time transaction"
+            ), connection:
+                with tracer.start_as_current_span(
+                    "cursor"
+                ), connection.cursor() as cursor:
                     with tracer.start_as_current_span("update cron time query"):
                         cursor.execute(
                             """
@@ -114,8 +121,12 @@ def calendarcron():
                 start = parse_event_time(event["start"], calendar_tz)
                 if cron_start_time <= start <= now:
                     events_to_send.append(event)
-            with tracer.start_as_current_span("find calendar chats transaction"), connection:
-                with tracer.start_as_current_span("cursor"), connection.cursor() as cursor:
+            with tracer.start_as_current_span(
+                "find calendar chats transaction"
+            ), connection:
+                with tracer.start_as_current_span(
+                    "cursor"
+                ), connection.cursor() as cursor:
                     with tracer.start_as_current_span("find calendar chats query"):
                         cursor.execute(
                             """
@@ -141,34 +152,44 @@ def calendarcron():
                     pass
                 else:
                     summaries = find_event_summaries_starting(events_obj, events_start)
-                    with tracer.start_as_current_span("event_details table exists transaction"), connection:
-                        with tracer.start_as_current_span("cursor"), connection.cursor() as cursor:
-                            with tracer.start_as_current_span("event_details table exists query"):
-                                cursor.execute(
-                                    """
+                    with tracer.start_as_current_span(
+                        "event_details table exists transaction"
+                    ), connection:
+                        with tracer.start_as_current_span(
+                            "cursor"
+                        ), connection.cursor() as cursor:
+                            with tracer.start_as_current_span(
+                                "event_details table exists query"
+                            ):
+                                cursor.execute("""
                                     SELECT
                                         table_name
                                     FROM
                                         information_schema.tables
                                     WHERE
                                         table_name = 'event_details'
-                                    """
-                                )
+                                    """)
                                 if not cursor.rowcount:
-                                    with tracer.start_as_current_span("create event_details table query"):
-                                        cursor.execute(
-                                            """
+                                    with tracer.start_as_current_span(
+                                        "create event_details table query"
+                                    ):
+                                        cursor.execute("""
                                             CREATE TABLE
                                                 event_details (
                                                     calendar_type text,
                                                     calendar_id text,
                                                     summary text
                                                 )
-                                            """
-                                        )
-                    with tracer.start_as_current_span("update event_details transaction"), connection:
-                        with tracer.start_as_current_span("cursor"), connection.cursor() as cursor:
-                            with tracer.start_as_current_span("clear event_details query"):
+                                            """)
+                    with tracer.start_as_current_span(
+                        "update event_details transaction"
+                    ), connection:
+                        with tracer.start_as_current_span(
+                            "cursor"
+                        ), connection.cursor() as cursor:
+                            with tracer.start_as_current_span(
+                                "clear event_details query"
+                            ):
                                 cursor.execute(
                                     """
                                     DELETE FROM
@@ -179,7 +200,9 @@ def calendarcron():
                                     """,
                                     (calendar_id,),
                                 )
-                            with tracer.start_as_current_span("insert event_details query"):
+                            with tracer.start_as_current_span(
+                                "insert event_details query"
+                            ):
                                 execute_values(
                                     cursor,
                                     """

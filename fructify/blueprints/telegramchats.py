@@ -6,7 +6,6 @@ import psycopg2
 
 from fructify.tracing import trace_cm
 
-
 bp = Blueprint("telegramchats", __name__)
 
 

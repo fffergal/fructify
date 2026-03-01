@@ -9,7 +9,6 @@ from flask import Blueprint, g, request, url_for
 from fructify.auth import oauth
 from fructify.constants import EASYCRON_IPS
 
-
 bp = Blueprint("renewwatchcron", __name__)
 
 
@@ -21,8 +20,12 @@ def renewwatchcron():
         try:
             with tracer.start_as_current_span("open db connection"):
                 connection = psycopg2.connect(os.environ["POSTGRES_DSN"])
-            with tracer.start_as_current_span("find renewwatchcron transaction"), connection:
-                with tracer.start_as_current_span("cursor"), connection.cursor() as cursor:
+            with tracer.start_as_current_span(
+                "find renewwatchcron transaction"
+            ), connection:
+                with tracer.start_as_current_span(
+                    "cursor"
+                ), connection.cursor() as cursor:
                     with tracer.start_as_current_span("find renewwatchcron query"):
                         cursor.execute(
                             """
@@ -38,7 +41,9 @@ def renewwatchcron():
                     assert cursor.rowcount
                     g.sub, cron_id = next(cursor)
             with tracer.start_as_current_span("find googlewatch transaction"):
-                with tracer.start_as_current_span("cursor"), connection.cursor() as cursor:
+                with tracer.start_as_current_span(
+                    "cursor"
+                ), connection.cursor() as cursor:
                     with tracer.start_as_current_span("find googlewatch query"):
                         cursor.execute(
                             """

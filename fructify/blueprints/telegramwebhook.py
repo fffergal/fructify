@@ -9,7 +9,6 @@ import requests
 from fructify.help import unwrap_heredoc
 from fructify.tracing import trace_cm
 
-
 bp = Blueprint("telegramwebhook", __name__)
 
 
@@ -33,7 +32,9 @@ def telegramwebhook():
             try:
                 with trace_cm(connection, "delete expired secrets transaction"):
                     with trace_cm(connection.cursor(), "cursor") as cursor:
-                        with tracer.start_as_current_span("delete expired secrets query"):
+                        with tracer.start_as_current_span(
+                            "delete expired secrets query"
+                        ):
                             cursor.execute(
                                 "DELETE FROM secret WHERE expires < %s",
                                 (datetime.datetime.utcnow(),),
@@ -51,15 +52,13 @@ def telegramwebhook():
                                     send_message_url,
                                     data={
                                         "chat_id": chat_id,
-                                        "text": unwrap_heredoc(
-                                            f"""
+                                        "text": unwrap_heredoc(f"""
                                             Could not link this group to your Fructify
                                             account. Please go to <a
                                             href="{request.base_url}/dashboard">your
                                             Fructify dashboard</a> to link a Telegram
                                             group to your account.
-                                            """
-                                        ),
+                                            """),
                                         "parse_mode": "HTML",
                                     },
                                 )
@@ -68,24 +67,22 @@ def telegramwebhook():
                 with trace_cm(connection, "link table exists transaction"):
                     with trace_cm(connection.cursor(), "cursor") as cursor:
                         with tracer.start_as_current_span("link table exists query"):
-                            cursor.execute(
-                                """
+                            cursor.execute("""
                                 SELECT
                                     table_name
                                 FROM
                                     information_schema.tables
                                 WHERE
                                     table_name = 'link'
-                                """
-                            )
+                                """)
                         if not cursor.rowcount:
-                            with tracer.start_as_current_span("create link table query"):
-                                cursor.execute(
-                                    """
+                            with tracer.start_as_current_span(
+                                "create link table query"
+                            ):
+                                cursor.execute("""
                                     CREATE TABLE
                                         link (sub text, link_name text, issuer_sub text)
-                                    """
-                                )
+                                    """)
                 with trace_cm(connection, "link telegram transaction"):
                     with trace_cm(connection.cursor(), "cursor") as cursor:
                         with tracer.start_as_current_span("telegram link exists query"):
@@ -103,7 +100,9 @@ def telegramwebhook():
                                 (sub, str(chat_id)),
                             )
                         if not cursor.rowcount:
-                            with tracer.start_as_current_span("insert telegram link query"):
+                            with tracer.start_as_current_span(
+                                "insert telegram link query"
+                            ):
                                 cursor.execute(
                                     """
                                     INSERT INTO
@@ -115,25 +114,25 @@ def telegramwebhook():
                                 )
                 with trace_cm(connection, "telegram table exists transaction"):
                     with trace_cm(connection.cursor(), "cursor") as cursor:
-                        with tracer.start_as_current_span("telegram table exists query"):
-                            cursor.execute(
-                                """
+                        with tracer.start_as_current_span(
+                            "telegram table exists query"
+                        ):
+                            cursor.execute("""
                                 SELECT
                                     table_name
                                 FROM
                                     information_schema.tables
                                 WHERE
                                     table_name = 'telegram'
-                                """
-                            )
+                                """)
                         if not cursor.rowcount:
-                            with tracer.start_as_current_span("create telegram table query"):
-                                cursor.execute(
-                                    """
+                            with tracer.start_as_current_span(
+                                "create telegram table query"
+                            ):
+                                cursor.execute("""
                                     CREATE TABLE
                                         telegram (issuer_sub text, chat_title text)
-                                    """
-                                )
+                                    """)
                 with trace_cm(connection, "save telegram transaction"):
                     with trace_cm(connection.cursor(), "cursor") as cursor:
                         with tracer.start_as_current_span("telegram exists query"):

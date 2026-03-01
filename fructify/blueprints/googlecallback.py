@@ -7,7 +7,6 @@ from flask import Blueprint, redirect, session
 from fructify.auth import oauth, update_google_token
 from fructify.tracing import trace_call, trace_cm
 
-
 bp = Blueprint("googlecallback", __name__)
 
 
@@ -28,12 +27,10 @@ def googlecallback():
                         )
                     if ("link",) not in list(cursor):
                         with tracer.start_as_current_span("link table create query"):
-                            cursor.execute(
-                                """
+                            cursor.execute("""
                                 CREATE TABLE
                                     link (sub text, link_name text, issuer_sub text)
-                                """
-                            )
+                                """)
             with trace_cm(connection, "link google transaction"):
                 with trace_cm(connection.cursor(), "link google cursor") as cursor:
                     trace_call("google link exists query")(cursor.execute)(
