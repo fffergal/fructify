@@ -6,7 +6,7 @@ setup(
     install_requires=[
         "authlib~=0.14",
         "blinker~=1.4",
-        "flask~=2.2",
+        "flask~=3.1",
         "honeycomb-beeline~=2.11",
         "psycopg2-binary~=2.9",
         "requests~=2.23",
