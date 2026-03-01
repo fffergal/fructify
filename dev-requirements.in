@@ -1,7 +1,7 @@
 -c requirements.txt
-pip-tools~=6.4
-tox~=3.15
-flake8~=3.7
+pip-tools~=7.4
+tox~=4.0
+flake8~=7.0
 black~=24.3
 virtualenv!=20.0.10
 python-dotenv~=0.21

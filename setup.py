@@ -8,9 +8,9 @@ setup(
         "blinker~=1.4",
         "flask~=2.2",
         "honeycomb-beeline~=2.11",
-        "psycopg2-binary~=2.8",
+        "psycopg2-binary~=2.9",
         "requests~=2.23",
-        "wrapt~=1.12",
+        "wrapt~=1.16",
     ],
     test_suite="tests",
 )
