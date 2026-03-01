@@ -3,7 +3,7 @@ version: 2
 jobs:
   test_python:
     docker:
-      - image: cimg/python:3.9
+      - image: cimg/python:3.12
     steps:
       - checkout
       - run: pip install -r dev-requirements.txt
