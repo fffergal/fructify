@@ -6,6 +6,9 @@ build
 .tox
 
 .vercel
+.python-version
+uv.lock
+pyproject.toml
 
 # dependencies
 /node_modules
