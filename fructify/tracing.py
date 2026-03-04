@@ -40,7 +40,7 @@ def presend(fields):
     sensitives = {
         key: value
         for key, value in os.environ.items()
-        if key.upper().endswith(("KEY", "TOKEN")) and value
+        if key.upper().endswith(("KEY", "TOKEN"))
     }
     for key in fields:
         if type(fields[key]) is str:

@@ -97,12 +97,10 @@ environment variable is available in the agent sandbox.
 
 2. **Link and pull environment variables:**
    ```bash
-   # Link the project to Vercel (creates .vercel/project.json)
-   vercel link --yes --token "$VERCEL_TOKEN"
-   # Pull preview env vars into .env (includes FLASK_SECRET_KEY, AUTH0_*, GOOGLE_*, etc.)
-   vercel env pull .env --environment=preview --token "$VERCEL_TOKEN"
+   # Pull preview env vars (includes FLASK_SECRET_KEY, AUTH0_*, GOOGLE_*, etc.)
+   vercel pull --yes --environment=preview --token "$VERCEL_TOKEN"
    ```
-   This creates `.env` with the app secrets.
+   This creates `.vercel/.env.preview.local` with the app secrets.
 
 3. **Check the build works** (optional but useful to confirm a build change is
    sound before waiting for CI):
@@ -116,7 +114,7 @@ environment variable is available in the agent sandbox.
    The `next.config.js` proxies `/api/...` to Flask on port 5000 in development:
    ```bash
    # Terminal 1: start the Flask Python API
-   set -a && source .env && set +a
+   set -a && source .vercel/.env.preview.local && set +a
    python3 -m flask --app api/index.py run --port 5000
 
    # Terminal 2: start the Next.js frontend
@@ -124,7 +122,7 @@ environment variable is available in the agent sandbox.
    ```
    Or as background processes in a single shell:
    ```bash
-   set -a && source .env && set +a
+   set -a && source .vercel/.env.preview.local && set +a
    python3 -m flask --app api/index.py run --port 5000 > /tmp/flask.log 2>&1 &
    npm run dev -- --port 3000 > /tmp/nextjs.log 2>&1 &
    ```
@@ -142,7 +140,7 @@ environment variable is available in the agent sandbox.
 
    ![Login offer screenshot](https://github.com/user-attachments/assets/c5f402bc-6f68-4739-b8d9-e4b04f085a8a)
 
-6. **Verify Honeycomb tracing** — the `HONEYCOMB_KEY` from `.env`
+6. **Verify Honeycomb tracing** — the `HONEYCOMB_KEY` from `.vercel/.env.preview.local`
    is used by the Flask app to publish traces to Honeycomb (dataset `"IFTTT webhooks"`,
    service `"fructify"`). After browsing the local app (step 5), confirm that spans
    reached Honeycomb:
@@ -172,13 +170,28 @@ environment variable is available in the agent sandbox.
    `request.path`, so browsing different pages shows distinct URLs with their span
    counts.
 
-   If you cannot see data in Honeycomb, check the Flask log for export errors:
-   ```bash
-   grep -i "honeycomb\|beeline\|export\|error" /tmp/flask.log
-   ```
-   Common causes: `HONEYCOMB_KEY` not set in the environment (check `env | grep HONEYCOMB`),
-   or the beeline failing silently — in which case the Flask log may show tracing
-   initialization errors.
+   If you cannot see data in Honeycomb, check these common causes in order:
+
+   1. **`HONEYCOMB_KEY` is empty** — `vercel pull` returns empty strings for
+      `sensitive`-type Vercel secrets. Confirm the key is non-empty:
+      ```bash
+      env | grep HONEYCOMB
+      ```
+      If the value is empty, source it from `make_env.sh` (requires LastPass CLI)
+      or set it in the shell before starting Flask:
+      ```bash
+      export HONEYCOMB_KEY="<your-key>"
+      ```
+   2. **`api.honeycomb.io` is unreachable** — confirm connectivity before querying:
+      ```bash
+      curl -s "https://api.honeycomb.io/1/auth" -H "X-Honeycomb-Team: $HONEYCOMB_KEY"
+      # Valid key → {"id":"...","type":"..."}  |  blocked → curl: (6) Could not resolve host
+      ```
+      Note: `api.honeycomb.io` is blocked in some agent sandboxes.
+   3. **Beeline initialization errors are silent** — the beeline library logs at
+      DEBUG level to the Python `honeycomb-sdk` logger, not to Flask's stdout, so
+      they will not appear in `/tmp/flask.log`. The only reliable check is confirming
+      `HONEYCOMB_KEY` is non-empty (step 1 above) before Flask starts.
 
 ### Fixing Failures
 
