@@ -7,8 +7,8 @@ from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExport
 from opentelemetry.instrumentation.flask import FlaskInstrumentor
 from opentelemetry.instrumentation.requests import RequestsInstrumentor
 from opentelemetry.sdk.resources import Resource
-from opentelemetry.sdk.trace import SpanProcessor, TracerProvider
-from opentelemetry.sdk.trace.export import BatchSpanProcessor
+from opentelemetry.sdk.trace import ReadableSpan, TracerProvider
+from opentelemetry.sdk.trace.export import BatchSpanProcessor, SpanExporter
 import wrapt
 
 tracer = trace.get_tracer("fructify")
@@ -17,39 +17,53 @@ tracer = trace.get_tracer("fructify")
 tracing_inited_holder = SimpleNamespace(inited=False, processor=None)
 
 
-class SanitizingSpanProcessor(SpanProcessor):
-    """Replace secret env var values in all span attributes before export."""
+class SanitizingExporter(SpanExporter):
+    """Delegate exporter that replaces secret env var values in span attributes."""
 
-    def __init__(self):
+    def __init__(self, delegate):
+        self.delegate = delegate
         self.secrets = {}
         for key, value in os.environ.items():
             if key.upper().endswith(("KEY", "TOKEN")) or key == "POSTGRES_DSN":
                 if value:
                     self.secrets[key] = value
 
-    def on_start(self, span, parent_context=None):
-        pass
+    def _sanitize(self, value):
+        if not isinstance(value, str):
+            return value
+        for key, secret in self.secrets.items():
+            value = value.replace(secret, f"<{key}>")
+        return value
 
-    def on_end(self, span):
-        if not span._attributes:
-            return
-        for k in list(span._attributes.keys()):
-            v = span._attributes[k]
-            if isinstance(v, str):
-                new_v = v
-                for key, secret in self.secrets.items():
-                    new_v = new_v.replace(secret, f"<{key}>")
-                if new_v != v:
-                    # span.attributes is a read-only MappingProxy once the span
-                    # has ended, but span._attributes is still mutable at
-                    # processor time (before BatchSpanProcessor serialises it).
-                    span._attributes[k] = new_v
+    def _sanitize_span(self, span):
+        if not span.attributes:
+            return span
+        sanitized = {k: self._sanitize(v) for k, v in span.attributes.items()}
+        if sanitized == dict(span.attributes):
+            return span
+        return ReadableSpan(
+            name=span.name,
+            context=span.context,
+            parent=span.parent,
+            resource=span.resource,
+            attributes=sanitized,
+            events=span.events,
+            links=span.links,
+            kind=span.kind,
+            instrumentation_scope=span.instrumentation_scope,
+            status=span.status,
+            start_time=span.start_time,
+            end_time=span.end_time,
+        )
+
+    def export(self, spans):
+        return self.delegate.export([self._sanitize_span(s) for s in spans])
 
     def shutdown(self):
-        pass
+        return self.delegate.shutdown()
 
-    def force_flush(self, timeout_millis=None):
-        pass
+    def force_flush(self, timeout_millis=30000):
+        return self.delegate.force_flush(timeout_millis)
 
 
 def _flask_request_hook(span, environ):
@@ -75,14 +89,15 @@ def init_tracing():
             if field in os.environ:
                 resource_attrs[field.lower()] = os.environ[field]
         provider = TracerProvider(resource=Resource(resource_attrs))
-        provider.add_span_processor(SanitizingSpanProcessor())
         batch_processor = BatchSpanProcessor(
-            OTLPSpanExporter(
-                endpoint="https://api.honeycomb.io/v1/traces",
-                headers={
-                    "x-honeycomb-team": os.environ["HONEYCOMB_KEY"],
-                    "x-honeycomb-dataset": "fructify",
-                },
+            SanitizingExporter(
+                OTLPSpanExporter(
+                    endpoint="https://api.honeycomb.io/v1/traces",
+                    headers={
+                        "x-honeycomb-team": os.environ["HONEYCOMB_KEY"],
+                        "x-honeycomb-dataset": "fructify",
+                    },
+                )
             )
         )
         provider.add_span_processor(batch_processor)
