@@ -76,33 +76,69 @@ curl -s "https://circleci.com/api/v2/workflow/{workflow_id}/job"
 
 Vercel builds a preview deployment and reports its status on the commit.
 
-- If the build fails, you may not have permission to view the logs. Ask the
-  repository owner for the logs if needed.
-- Once the preview URL is available, visit it with Playwright and wait for it to
-  offer the login link after checking login status. Preview deployments do not
-  have login enabled, but waiting for that check to complete exercises both the
-  Python API and JavaScript frontend.
-  - If the page fails to load or takes too long, ask for the access logs to
-    diagnose the error.
+`vercel.com` and `*.vercel.app` are **not** reachable from the agent sandbox
+(neither Playwright nor `curl` can reach them). To check the deployment status
+without a browser, read the Vercel bot comment on the PR using
+`github-mcp-server-pull_request_read` with `method: get_comments`. Look for the
+comment from `vercel[bot]` — it contains a Markdown table with a **Preview**
+link and the deployment status (e.g. "Ready").
 
-#### Finding the Vercel Preview URL
+#### Verifying the app locally with the Vercel CLI
 
-`vercel.com` and `*.vercel.app` preview URLs are **not** reachable via
-Playwright or `curl` from the agent sandbox. To find the preview URL and check
-the deployment status without a browser:
+To actually exercise the app (check the build works and the login link is
+offered), use the Vercel CLI to run the app locally. The `VERCEL_TOKEN`
+environment variable is available in the agent sandbox.
 
-1. Read the Vercel bot comment on the PR using
-   `github-mcp-server-pull_request_read` with `method: get_comments`. Look for
-   the comment from `vercel[bot]` — it contains a Markdown table with a
-   **Preview** link and the deployment status (e.g. "Ready").
+1. **Install prerequisites:**
+   ```bash
+   npm install -g vercel
+   pip install uv   # required by vercel build for Python functions
+   ```
 
-2. The preview URL follows the pattern:
-   `https://{project}-git-{branch-slug}-{team}.vercel.app`
+2. **Link and pull environment variables:**
+   ```bash
+   # Pull preview env vars (includes FLASK_SECRET_KEY, AUTH0_*, GOOGLE_*, etc.)
+   vercel pull --yes --environment=preview --token "$VERCEL_TOKEN"
+   ```
+   This creates `.vercel/.env.preview.local` with the app secrets.
 
-3. Because the preview domain is not reachable from the sandbox, confirming the
-   login check requires Playwright in an environment that can reach `vercel.app`.
-   If that is not available, rely on the Vercel bot comment status ("Ready") as
-   confirmation that the deployment succeeded.
+3. **Check the build works** (optional but useful to confirm a build change is
+   sound before waiting for CI):
+   ```bash
+   vercel build --token "$VERCEL_TOKEN"
+   # Succeeds with: ✅  Build Completed in .vercel/output
+   ```
+
+4. **Run the app locally** — `vercel dev` has a CLI bug that causes it to crash
+   after the Next.js build step, so instead run the two services separately.
+   The `next.config.js` proxies `/api/...` to Flask on port 5000 in development:
+   ```bash
+   # Terminal 1: start the Flask Python API
+   set -a && source .vercel/.env.preview.local && set +a
+   python3 -m flask --app api/index.py run --port 5000
+
+   # Terminal 2: start the Next.js frontend
+   npm run dev -- --port 3000
+   ```
+   Or as background processes in a single shell:
+   ```bash
+   set -a && source .vercel/.env.preview.local && set +a
+   python3 -m flask --app api/index.py run --port 5000 > /tmp/flask.log 2>&1 &
+   npm run dev -- --port 3000 > /tmp/nextjs.log 2>&1 &
+   ```
+
+5. **Check the login offer with Playwright** — once both servers are up
+   (`curl http://localhost:5000/api/v1/authcheck` returns `{"loggedIn":false}`
+   and `curl http://localhost:3000/` returns HTML), navigate to the app:
+   ```js
+   // Playwright: navigate and wait for login link
+   await page.goto('http://localhost:3000');
+   await page.getByText('Log in').first().waitFor({ state: 'visible' });
+   // Should see: <a href="/api/v1/login">Log in/Sign up</a>
+   ```
+   `http://localhost:3000` **is** reachable via Playwright in the agent sandbox.
+
+   ![Login offer screenshot](https://github.com/user-attachments/assets/c5f402bc-6f68-4739-b8d9-e4b04f085a8a)
 
 ### Fixing Failures
 
