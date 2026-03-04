@@ -76,9 +76,9 @@ curl -s "https://circleci.com/api/v2/workflow/{workflow_id}/job"
 
 Vercel builds a preview deployment and reports its status on the commit.
 
-`vercel.com` and `*.vercel.app` are **not** reachable from the agent sandbox
-(neither Playwright nor `curl` can reach them). To check the deployment status
-without a browser, read the Vercel bot comment on the PR using
+`vercel.com` and `*.vercel.app` are reachable via `curl` and the Vercel CLI
+from the agent sandbox, but **not** via Playwright. To check the deployment
+status without a browser, read the Vercel bot comment on the PR using
 `github-mcp-server-pull_request_read` with `method: get_comments`. Look for the
 comment from `vercel[bot]` — it contains a Markdown table with a **Preview**
 link and the deployment status (e.g. "Ready").
