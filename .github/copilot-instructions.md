@@ -97,10 +97,12 @@ environment variable is available in the agent sandbox.
 
 2. **Link and pull environment variables:**
    ```bash
-   # Pull preview env vars (includes FLASK_SECRET_KEY, AUTH0_*, GOOGLE_*, etc.)
-   vercel pull --yes --environment=preview --token "$VERCEL_TOKEN"
+   # Link the project to Vercel (creates .vercel/project.json)
+   vercel link --yes --token "$VERCEL_TOKEN"
+   # Pull preview env vars into .env (includes FLASK_SECRET_KEY, AUTH0_*, GOOGLE_*, etc.)
+   vercel env pull .env --environment=preview --token "$VERCEL_TOKEN"
    ```
-   This creates `.vercel/.env.preview.local` with the app secrets.
+   This creates `.env` with the app secrets.
 
 3. **Check the build works** (optional but useful to confirm a build change is
    sound before waiting for CI):
@@ -114,7 +116,7 @@ environment variable is available in the agent sandbox.
    The `next.config.js` proxies `/api/...` to Flask on port 5000 in development:
    ```bash
    # Terminal 1: start the Flask Python API
-   set -a && source .vercel/.env.preview.local && set +a
+   set -a && source .env && set +a
    python3 -m flask --app api/index.py run --port 5000
 
    # Terminal 2: start the Next.js frontend
@@ -122,7 +124,7 @@ environment variable is available in the agent sandbox.
    ```
    Or as background processes in a single shell:
    ```bash
-   set -a && source .vercel/.env.preview.local && set +a
+   set -a && source .env && set +a
    python3 -m flask --app api/index.py run --port 5000 > /tmp/flask.log 2>&1 &
    npm run dev -- --port 3000 > /tmp/nextjs.log 2>&1 &
    ```
@@ -140,7 +142,7 @@ environment variable is available in the agent sandbox.
 
    ![Login offer screenshot](https://github.com/user-attachments/assets/c5f402bc-6f68-4739-b8d9-e4b04f085a8a)
 
-6. **Verify Honeycomb tracing** — the `HONEYCOMB_KEY` from `.vercel/.env.preview.local`
+6. **Verify Honeycomb tracing** — the `HONEYCOMB_KEY` from `.env`
    is used by the Flask app to publish traces to Honeycomb (dataset `"IFTTT webhooks"`,
    service `"fructify"`). After browsing the local app (step 5), confirm that spans
    reached Honeycomb:
