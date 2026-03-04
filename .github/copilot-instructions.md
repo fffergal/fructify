@@ -140,6 +140,44 @@ environment variable is available in the agent sandbox.
 
    ![Login offer screenshot](https://github.com/user-attachments/assets/c5f402bc-6f68-4739-b8d9-e4b04f085a8a)
 
+6. **Verify Honeycomb tracing** — the `HONEYCOMB_KEY` from `.vercel/.env.preview.local`
+   is used by the Flask app to publish traces to Honeycomb (dataset `"IFTTT webhooks"`,
+   service `"fructify"`). After browsing the local app (step 5), confirm that spans
+   reached Honeycomb:
+   ```bash
+   # Create a query for events in the last 10 minutes, then fetch results
+   QUERY_ID=$(curl -s -X POST "https://api.honeycomb.io/1/queries/IFTTT%20webhooks" \
+     -H "X-Honeycomb-Team: $HONEYCOMB_KEY" \
+     -H "Content-Type: application/json" \
+     -d '{
+       "calculations": [{"op": "COUNT"}],
+       "breakdowns": ["request.path"],
+       "filters": [{"column": "service_name", "op": "=", "value": "fructify"}],
+       "time_range": 600
+     }' \
+     | python3 -c "import json,sys; print(json.load(sys.stdin)['id'])")
+   sleep 3
+   curl -s "https://api.honeycomb.io/1/query_results/IFTTT%20webhooks/$QUERY_ID" \
+     -H "X-Honeycomb-Team: $HONEYCOMB_KEY" \
+     | python3 -c "
+   import json, sys
+   d = json.load(sys.stdin)
+   for r in d.get('data', {}).get('results', []):
+       print(r['data'].get('request.path'), '->', r['data']['COUNT'])
+   "
+   ```
+   Each page request should produce at least one span. Results are broken down by
+   `request.path`, so browsing different pages shows distinct URLs with their span
+   counts.
+
+   If you cannot see data in Honeycomb, check the Flask log for export errors:
+   ```bash
+   grep -i "honeycomb\|beeline\|export\|error" /tmp/flask.log
+   ```
+   Common causes: `HONEYCOMB_KEY` not set in the environment (check `env | grep HONEYCOMB`),
+   or the beeline failing silently — in which case the Flask log may show tracing
+   initialization errors.
+
 ### Fixing Failures
 
 Fix any problems found in the status checks on the latest commit. Keep
