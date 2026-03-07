@@ -143,37 +143,53 @@ environment variable is available in the agent sandbox.
    ![Login offer screenshot](https://github.com/user-attachments/assets/c5f402bc-6f68-4739-b8d9-e4b04f085a8a)
 
 6. **Verify Honeycomb tracing** — the `HONEYCOMB_KEY` from `.env.local`
-   is used by the Flask app to publish traces to Honeycomb (dataset `"IFTTT webhooks"`,
+   is used by the Flask app to publish traces to Honeycomb (dataset `"ifttt-webhooks"`,
    service `"fructify"`). After browsing the local app (step 5), confirm that spans
-   reached Honeycomb:
+   reached Honeycomb using the **Honeycomb MCP server** (`HONEYCOMB_MCP_API_KEY_ID_AND_SECRET_KEY`
+   is injected into agent sessions):
    ```bash
-   # Confirm the key has events access and api.honeycomb.io is reachable
-   curl -s "https://api.honeycomb.io/1/auth" -H "X-Honeycomb-Team: $HONEYCOMB_KEY" \
-     | python3 -c "
-   import json, sys
-   d = json.load(sys.stdin)
-   print('Team:', d['team']['name'])
-   print('Environment:', d['environment']['name'])
-   print('Events access:', d['api_key_access']['events'])
-   "
-   # Should print:
-   # Team: Fergal
-   # Environment: copilotlocal
-   # Events access: True
-
-   # Send a test event and confirm the batch API accepts it (202 = accepted)
-   curl -s -X POST "https://api.honeycomb.io/1/batch/IFTTT%20webhooks" \
-     -H "X-Honeycomb-Team: $HONEYCOMB_KEY" \
+   # Query the copilotlocal environment via the Honeycomb MCP server
+   curl -s "https://mcp.honeycomb.io/mcp" \
+     -H "Authorization: Bearer $HONEYCOMB_MCP_API_KEY_ID_AND_SECRET_KEY" \
      -H "Content-Type: application/json" \
-     -d '[{"data": {"service_name": "fructify", "request.path": "/test/verify"}}]'
-   # Should return: [{"status":202}]
+     -d '{
+       "jsonrpc": "2.0",
+       "method": "tools/call",
+       "id": 1,
+       "params": {
+         "name": "run_query",
+         "arguments": {
+           "environment_slug": "copilotlocal",
+           "dataset_slug": "ifttt-webhooks",
+           "query_spec": {
+             "calculations": [{"op": "COUNT"}],
+             "breakdowns": ["request.path"],
+             "filters": [{"column": "service_name", "op": "=", "value": "fructify"}],
+             "time_range": 600
+           }
+         }
+       }
+     }' | python3 -c "
+   import sys, json
+   for line in sys.stdin:
+       line = line.strip()
+       if line.startswith('data:'):
+           data = line[5:].strip()
+           try:
+               d = json.loads(data)
+               for c in d.get('result', {}).get('content', []):
+                   print(c.get('text', ''))
+           except: pass
+   "
    ```
-   Each page request in step 5 also produces spans that land in the `copilotlocal`
-   environment in Honeycomb (visible in the Honeycomb UI at https://ui.honeycomb.io).
-
-   Note: the `HONEYCOMB_KEY` from `.env.local` is an ingest-only key (events access
-   but not query API access), so querying via the Honeycomb API is not possible with
-   this key. Use the Honeycomb UI to inspect the received spans.
+   This should print a results table like:
+   ```
+   | COUNT | request.path |
+   | --- | --- |
+   | 6 | /api/v1/authcheck |
+   ```
+   Each page request in step 5 produces at least one span. Results are broken down by
+   `request.path`, so browsing different pages shows distinct URLs with their span counts.
 
    If you cannot see data in Honeycomb, check these common causes in order:
 
