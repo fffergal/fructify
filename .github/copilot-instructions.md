@@ -145,44 +145,21 @@ environment variable is available in the agent sandbox.
 6. **Verify Honeycomb tracing** — the `HONEYCOMB_KEY` from `.env.local`
    is used by the Flask app to publish traces to Honeycomb (dataset `"ifttt-webhooks"`,
    service `"fructify"`). After browsing the local app (step 5), confirm that spans
-   reached Honeycomb using the **Honeycomb MCP server** (`HONEYCOMB_MCP_API_KEY_ID_AND_SECRET_KEY`
-   is injected into agent sessions):
-   ```bash
-   # Query the copilotlocal environment via the Honeycomb MCP server
-   curl -s "https://mcp.honeycomb.io/mcp" \
-     -H "Authorization: Bearer $HONEYCOMB_MCP_API_KEY_ID_AND_SECRET_KEY" \
-     -H "Content-Type: application/json" \
-     -d '{
-       "jsonrpc": "2.0",
-       "method": "tools/call",
-       "id": 1,
-       "params": {
-         "name": "run_query",
-         "arguments": {
-           "environment_slug": "copilotlocal",
-           "dataset_slug": "ifttt-webhooks",
-           "query_spec": {
-             "calculations": [{"op": "COUNT"}],
-             "breakdowns": ["request.path"],
-             "filters": [{"column": "service_name", "op": "=", "value": "fructify"}],
-             "time_range": 600
-           }
-         }
-       }
-     }' | python3 -c "
-   import sys, json
-   for line in sys.stdin:
-       line = line.strip()
-       if line.startswith('data:'):
-           data = line[5:].strip()
-           try:
-               d = json.loads(data)
-               for c in d.get('result', {}).get('content', []):
-                   print(c.get('text', ''))
-           except: pass
-   "
+   reached Honeycomb using the **Honeycomb MCP server** (available as a native MCP tool
+   in agent sessions). Call the `run_query` tool with these arguments:
+   ```json
+   {
+     "environment_slug": "copilotlocal",
+     "dataset_slug": "ifttt-webhooks",
+     "query_spec": {
+       "calculations": [{"op": "COUNT"}],
+       "breakdowns": ["request.path"],
+       "filters": [{"column": "service_name", "op": "=", "value": "fructify"}],
+       "time_range": 600
+     }
+   }
    ```
-   This should print a results table like:
+   This should return a results table like:
    ```
    | COUNT | request.path |
    | --- | --- |
