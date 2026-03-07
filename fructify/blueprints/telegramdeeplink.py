@@ -16,13 +16,13 @@ bp = Blueprint("telegramdeeplink", __name__)
 def telegramdeeplink():
     sub = session.get("profile", {}).get("user_id")
     assert sub
-    with tracer.start_as_current_span("db connection"):
-        with tracer.start_as_current_span("open db connection"):
+    with tracer("db connection"):
+        with tracer("open db connection"):
             connection = psycopg2.connect(os.environ["POSTGRES_DSN"])
         try:
             with trace_cm(connection, "secret table exists transaction"):
                 with trace_cm(connection.cursor(), "cursor") as cursor:
-                    with tracer.start_as_current_span("secret table exists query"):
+                    with tracer("secret table exists query"):
                         cursor.execute(
                             """
                             SELECT
@@ -34,7 +34,7 @@ def telegramdeeplink():
                             """
                         )
                     if not cursor.rowcount:
-                        with tracer.start_as_current_span("create secret table query"):
+                        with tracer("create secret table query"):
                             cursor.execute(
                                 """
                                 CREATE TABLE
@@ -47,7 +47,7 @@ def telegramdeeplink():
                             )
             with trace_cm(connection, "delete expired secrets transaction"):
                 with trace_cm(connection.cursor(), "cursor") as cursor:
-                    with tracer.start_as_current_span("delete expired secrets query"):
+                    with tracer("delete expired secrets query"):
                         cursor.execute(
                             "DELETE FROM secret WHERE expires < %s",
                             (datetime.datetime.utcnow(),),
@@ -56,7 +56,7 @@ def telegramdeeplink():
                 with trace_cm(connection.cursor(), "cursor") as cursor:
                     secret = secrets.token_urlsafe(16)
                     expires = datetime.datetime.utcnow() + datetime.timedelta(hours=1)
-                    with tracer.start_as_current_span("insert new secret query"):
+                    with tracer("insert new secret query"):
                         cursor.execute(
                             """
                             INSERT INTO

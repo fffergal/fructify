@@ -4,8 +4,7 @@ from contextlib import suppress
 
 import psycopg2
 import requests
-from opentelemetry import trace as otel_trace
-from fructify.tracing import tracer
+from fructify.tracing import add_context_field, tracer
 from flask import Blueprint, g, request, url_for
 from psycopg2.extras import execute_values
 
@@ -20,28 +19,20 @@ bp = Blueprint("googlecalendarwebhook", __name__)
 @bp.route("/api/v1/googlecalendarwebhook", methods=["POST"])
 def googlecalendarwebhook():
     external_id = request.headers["x-goog-channel-id"]
-    otel_trace.get_current_span().set_attribute("goog_channel_id", external_id)
-    otel_trace.get_current_span().set_attribute(
-        "goog_resource_id", request.headers["x-goog-resource-id"]
-    )
+    add_context_field("goog_channel_id", external_id)
+    add_context_field("goog_resource_id", request.headers["x-goog-resource-id"])
     expiry = datetime.datetime.strptime(
         request.headers["x-goog-channel-expiration"], "%a, %d %b %Y %H:%M:%S %Z"
     )
-    otel_trace.get_current_span().set_attribute(
-        "goog_channel_expiration", f"{expiry:%Y-%m-%dT%H:%M:%SZ}"
-    )
+    add_context_field("goog_channel_expiration", f"{expiry:%Y-%m-%dT%H:%M:%SZ}")
     now = datetime.datetime.utcnow()
-    with tracer.start_as_current_span("db connection"):
+    with tracer("db connection"):
         try:
-            with tracer.start_as_current_span("open db connection"):
+            with tracer("open db connection"):
                 connection = psycopg2.connect(os.environ["POSTGRES_DSN"])
-            with tracer.start_as_current_span(
-                "find google issuer_sub transaction"
-            ), connection:
-                with tracer.start_as_current_span(
-                    "cursor"
-                ), connection.cursor() as cursor:
-                    with tracer.start_as_current_span("find google issuer_sub query"):
+            with tracer("find google issuer_sub transaction"), connection:
+                with tracer("cursor"), connection.cursor() as cursor:
+                    with tracer("find google issuer_sub query"):
                         cursor.execute(
                             """
                             SELECT
@@ -83,15 +74,9 @@ def googlecalendarwebhook():
             else:  # no break
                 return ("", 204)
 
-            with tracer.start_as_current_span(
-                "calendarcron table exists transaction"
-            ), connection:
-                with tracer.start_as_current_span(
-                    "cursor"
-                ), connection.cursor() as cursor:
-                    with tracer.start_as_current_span(
-                        "calendarcron table exists query"
-                    ):
+            with tracer("calendarcron table exists transaction"), connection:
+                with tracer("cursor"), connection.cursor() as cursor:
+                    with tracer("calendarcron table exists query"):
                         cursor.execute(
                             """
                             SELECT
@@ -103,9 +88,7 @@ def googlecalendarwebhook():
                             """
                         )
                     if not cursor.rowcount:
-                        with tracer.start_as_current_span(
-                            "create calendarcron table query"
-                        ):
+                        with tracer("create calendarcron table query"):
                             cursor.execute(
                                 """
                                 CREATE TABLE
@@ -118,13 +101,9 @@ def googlecalendarwebhook():
                                     )
                                 """
                             )
-            with tracer.start_as_current_span(
-                "check next cron transaction"
-            ), connection:
-                with tracer.start_as_current_span(
-                    "cursor"
-                ), connection.cursor() as cursor:
-                    with tracer.start_as_current_span("check next cron query"):
+            with tracer("check next cron transaction"), connection:
+                with tracer("cursor"), connection.cursor() as cursor:
+                    with tracer("check next cron query"):
                         cursor.execute(
                             """
                             SELECT
@@ -144,7 +123,7 @@ def googlecalendarwebhook():
                         new_is_earlier = start < existing_next_start_time
                         old_has_passed = existing_next_start_time < now
                         if new_is_earlier or old_has_passed:
-                            with tracer.start_as_current_span("update cron time query"):
+                            with tracer("update cron time query"):
                                 cursor.execute(
                                     """
                                     UPDATE
@@ -202,7 +181,7 @@ def googlecalendarwebhook():
                         error = cron_response.json().get("error", {}).get("message")
                         if error:
                             raise Exception(error)
-                        with tracer.start_as_current_span("insert cron query"):
+                        with tracer("insert cron query"):
                             cursor.execute(
                                 """
                                 INSERT INTO
@@ -231,15 +210,9 @@ def googlecalendarwebhook():
                 except LookupError:
                     return ("", 204)
                 summaries = find_event_summaries_starting(events_obj, events_start)
-                with tracer.start_as_current_span(
-                    "event_details table exists transaction"
-                ), connection:
-                    with tracer.start_as_current_span(
-                        "cursor"
-                    ), connection.cursor() as cursor:
-                        with tracer.start_as_current_span(
-                            "event_details table exists query"
-                        ):
+                with tracer("event_details table exists transaction"), connection:
+                    with tracer("cursor"), connection.cursor() as cursor:
+                        with tracer("event_details table exists query"):
                             cursor.execute(
                                 """
                                 SELECT
@@ -251,9 +224,7 @@ def googlecalendarwebhook():
                                 """
                             )
                             if not cursor.rowcount:
-                                with tracer.start_as_current_span(
-                                    "create event_details table query"
-                                ):
+                                with tracer("create event_details table query"):
                                     cursor.execute(
                                         """
                                         CREATE TABLE
@@ -264,13 +235,9 @@ def googlecalendarwebhook():
                                             )
                                         """
                                     )
-                with tracer.start_as_current_span(
-                    "update event_details transaction"
-                ), connection:
-                    with tracer.start_as_current_span(
-                        "cursor"
-                    ), connection.cursor() as cursor:
-                        with tracer.start_as_current_span("clear event_details query"):
+                with tracer("update event_details transaction"), connection:
+                    with tracer("cursor"), connection.cursor() as cursor:
+                        with tracer("clear event_details query"):
                             cursor.execute(
                                 """
                                 DELETE FROM
@@ -281,7 +248,7 @@ def googlecalendarwebhook():
                                 """,
                                 (google_calendar_id,),
                             )
-                        with tracer.start_as_current_span("insert event_details query"):
+                        with tracer("insert event_details query"):
                             execute_values(
                                 cursor,
                                 """

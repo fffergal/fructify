@@ -11,13 +11,13 @@ from fructify.tracing import trace_cm, tracer
 def fetch_google_token():
     sub = session.get("profile", {}).get("user_id") or getattr(g, "sub", None)
     assert sub
-    with tracer.start_as_current_span("db connection"):
-        with tracer.start_as_current_span("open db connection"):
+    with tracer("db connection"):
+        with tracer("open db connection"):
             connection = psycopg2.connect(os.environ["POSTGRES_DSN"])
         try:
             with trace_cm(connection, "get google token transaction"):
                 with trace_cm(connection.cursor(), "cursor") as cursor:
-                    with tracer.start_as_current_span("get google token query"):
+                    with tracer("get google token query"):
                         cursor.execute(
                             """
                             SELECT
@@ -40,13 +40,13 @@ def fetch_google_token():
 
 def update_google_token(token, refresh_token=None, access_token=None):
     userinfo = oauth.google.parse_id_token(token)
-    with tracer.start_as_current_span("db connection"):
-        with tracer.start_as_current_span("open db connection"):
+    with tracer("db connection"):
+        with tracer("open db connection"):
             connection = psycopg2.connect(os.environ["POSTGRES_DSN"])
         try:
             with trace_cm(connection, "google table maint transaction"):
                 with trace_cm(connection.cursor(), "cursor") as cursor:
-                    with tracer.start_as_current_span("google table exists query"):
+                    with tracer("google table exists query"):
                         cursor.execute(
                             """
                             SELECT
@@ -58,25 +58,25 @@ def update_google_token(token, refresh_token=None, access_token=None):
                             """
                         )
                     if not cursor.rowcount:
-                        with tracer.start_as_current_span("google table create query"):
+                        with tracer("google table create query"):
                             cursor.execute(
                                 "CREATE TABLE google (issuer_sub text, token text)"
                             )
             with trace_cm(connection, "save google token transaction"):
                 with trace_cm(connection.cursor(), "cursor") as cursor:
-                    with tracer.start_as_current_span("google token exists query"):
+                    with tracer("google token exists query"):
                         cursor.execute(
                             "SELECT issuer_sub FROM google WHERE issuer_sub = %s",
                             (userinfo["sub"],),
                         )
                     if cursor.rowcount:
-                        with tracer.start_as_current_span("update google token query"):
+                        with tracer("update google token query"):
                             cursor.execute(
                                 "UPDATE google SET token = %s WHERE issuer_sub = %s",
                                 (json.dumps(token), userinfo["sub"]),
                             )
                     else:
-                        with tracer.start_as_current_span("insert google token query"):
+                        with tracer("insert google token query"):
                             cursor.execute(
                                 """
                                 INSERT INTO

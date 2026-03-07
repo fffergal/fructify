@@ -28,17 +28,13 @@ def googletelegramlinks_put():
         calendar["id"] for calendar in calendar_list_response.json()["items"]
     ]
     assert google_calendar_id in calendar_ids
-    with tracer.start_as_current_span("db connection"):
-        with tracer.start_as_current_span("open db connection"):
+    with tracer("db connection"):
+        with tracer("open db connection"):
             connection = psycopg2.connect(os.environ["POSTGRES_DSN"])
         try:
-            with tracer.start_as_current_span(
-                "check chat ownership transaction"
-            ), connection:
-                with tracer.start_as_current_span(
-                    "cursor"
-                ), connection.cursor() as cursor:
-                    with tracer.start_as_current_span("check chat ownership query"):
+            with tracer("check chat ownership transaction"), connection:
+                with tracer("cursor"), connection.cursor() as cursor:
+                    with tracer("check chat ownership query"):
                         cursor.execute(
                             """
                             SELECT
@@ -54,13 +50,9 @@ def googletelegramlinks_put():
                         )
                     assert cursor.rowcount
 
-            with tracer.start_as_current_span(
-                "calendarchatlink maintenance transaction"
-            ), connection:
-                with tracer.start_as_current_span(
-                    "cursor"
-                ), connection.cursor() as cursor:
-                    with tracer.start_as_current_span("calendarchatlink exists query"):
+            with tracer("calendarchatlink maintenance transaction"), connection:
+                with tracer("cursor"), connection.cursor() as cursor:
+                    with tracer("calendarchatlink exists query"):
                         cursor.execute(
                             """
                             SELECT
@@ -72,9 +64,7 @@ def googletelegramlinks_put():
                             """
                         )
                     if not cursor.rowcount:
-                        with tracer.start_as_current_span(
-                            "create calendatchatlink table query"
-                        ):
+                        with tracer("create calendatchatlink table query"):
                             cursor.execute(
                                 """
                                 CREATE TABLE
@@ -89,13 +79,9 @@ def googletelegramlinks_put():
                                 """
                             )
 
-            with tracer.start_as_current_span(
-                "googlewatch maintenance transaction"
-            ), connection:
-                with tracer.start_as_current_span(
-                    "cursor"
-                ), connection.cursor() as cursor:
-                    with tracer.start_as_current_span("googlewatch exists query"):
+            with tracer("googlewatch maintenance transaction"), connection:
+                with tracer("cursor"), connection.cursor() as cursor:
+                    with tracer("googlewatch exists query"):
                         cursor.execute(
                             """
                             SELECT
@@ -107,9 +93,7 @@ def googletelegramlinks_put():
                             """
                         )
                     if not cursor.rowcount:
-                        with tracer.start_as_current_span(
-                            "create googlewatch table query"
-                        ):
+                        with tracer("create googlewatch table query"):
                             cursor.execute(
                                 """
                                 CREATE TABLE
@@ -122,15 +106,9 @@ def googletelegramlinks_put():
                                 """
                             )
 
-            with tracer.start_as_current_span(
-                "google telegram link exists transaction"
-            ), connection:
-                with tracer.start_as_current_span(
-                    "cursor"
-                ), connection.cursor() as cursor:
-                    with tracer.start_as_current_span(
-                        "google telegram link exists query"
-                    ):
+            with tracer("google telegram link exists transaction"), connection:
+                with tracer("cursor"), connection.cursor() as cursor:
+                    with tracer("google telegram link exists query"):
                         cursor.execute(
                             """
                             SELECT
@@ -149,13 +127,9 @@ def googletelegramlinks_put():
                     if cursor.rowcount:
                         return ({"error": "link exists already"}, 400)
 
-            with tracer.start_as_current_span(
-                "find googlewatch transaction"
-            ), connection:
-                with tracer.start_as_current_span(
-                    "cursor"
-                ), connection.cursor() as cursor:
-                    with tracer.start_as_current_span("googlewatch exists query"):
+            with tracer("find googlewatch transaction"), connection:
+                with tracer("cursor"), connection.cursor() as cursor:
+                    with tracer("googlewatch exists query"):
                         cursor.execute(
                             """
                             SELECT
@@ -175,15 +149,9 @@ def googletelegramlinks_put():
                         external_id = str(uuid.uuid4())
                         resource_id = None
 
-            with tracer.start_as_current_span(
-                "insert google telegram link transaction"
-            ), connection:
-                with tracer.start_as_current_span(
-                    "cursor"
-                ), connection.cursor() as cursor:
-                    with tracer.start_as_current_span(
-                        "insert google telegram link query"
-                    ):
+            with tracer("insert google telegram link transaction"), connection:
+                with tracer("cursor"), connection.cursor() as cursor:
+                    with tracer("insert google telegram link query"):
                         cursor.execute(
                             """
                             INSERT INTO
@@ -223,13 +191,9 @@ def googletelegramlinks_put():
                 response_expiration = datetime.utcfromtimestamp(
                     int(watch_json["expiration"]) / 1000
                 )
-                with tracer.start_as_current_span(
-                    "insert googlewatch transaction"
-                ), connection:
-                    with tracer.start_as_current_span(
-                        "cursor"
-                    ), connection.cursor() as cursor:
-                        with tracer.start_as_current_span("insert googlewatch query"):
+                with tracer("insert googlewatch transaction"), connection:
+                    with tracer("cursor"), connection.cursor() as cursor:
+                        with tracer("insert googlewatch query"):
                             cursor.execute(
                                 """
                                 INSERT INTO
@@ -245,15 +209,9 @@ def googletelegramlinks_put():
                                 (external_id, resource_id, sub, google_calendar_id),
                             )
 
-                with tracer.start_as_current_span(
-                    "renewwatchcron maintenance transaction"
-                ), connection:
-                    with tracer.start_as_current_span(
-                        "cursor"
-                    ), connection.cursor() as cursor:
-                        with tracer.start_as_current_span(
-                            "renewwatchcron exists query"
-                        ):
+                with tracer("renewwatchcron maintenance transaction"), connection:
+                    with tracer("cursor"), connection.cursor() as cursor:
+                        with tracer("renewwatchcron exists query"):
                             cursor.execute(
                                 """
                                 SELECT
@@ -265,9 +223,7 @@ def googletelegramlinks_put():
                                 """
                             )
                         if not cursor.rowcount:
-                            with tracer.start_as_current_span(
-                                "renewwatchcron create query"
-                            ):
+                            with tracer("renewwatchcron create query"):
                                 cursor.execute(
                                     """
                                     CREATE TABLE
@@ -298,15 +254,9 @@ def googletelegramlinks_put():
                 if error:
                     raise Exception(error)
 
-                with tracer.start_as_current_span(
-                    "insert renewwatchcron transaction"
-                ), connection:
-                    with tracer.start_as_current_span(
-                        "cursor"
-                    ), connection.cursor() as cursor:
-                        with tracer.start_as_current_span(
-                            "insert renewwatchcron query"
-                        ):
+                with tracer("insert renewwatchcron transaction"), connection:
+                    with tracer("cursor"), connection.cursor() as cursor:
+                        with tracer("insert renewwatchcron query"):
                             cursor.execute(
                                 """
                                 INSERT INTO
@@ -337,17 +287,13 @@ def googletelegramlinks_get():
     calendars_by_id = {
         calendar["id"]: calendar["summary"] for calendar in response.json()["items"]
     }
-    with tracer.start_as_current_span("db connection"):
-        with tracer.start_as_current_span("open db connection"):
+    with tracer("db connection"):
+        with tracer("open db connection"):
             connection = psycopg2.connect(os.environ["POSTGRES_DSN"])
         try:
-            with tracer.start_as_current_span(
-                "calendar chat link transaction"
-            ), connection:
-                with tracer.start_as_current_span(
-                    "cursor"
-                ), connection.cursor() as cursor:
-                    with tracer.start_as_current_span("calendar chat link query"):
+            with tracer("calendar chat link transaction"), connection:
+                with tracer("cursor"), connection.cursor() as cursor:
+                    with tracer("calendar chat link query"):
                         cursor.execute(
                             """
                             SELECT

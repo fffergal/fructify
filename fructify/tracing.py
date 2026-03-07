@@ -11,7 +11,14 @@ from opentelemetry.sdk.trace import ReadableSpan, TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor, SpanExporter
 import wrapt
 
-tracer = trace.get_tracer("fructify")
+
+def tracer(name):
+    return trace.get_tracer("fructify").start_as_current_span(name)
+
+
+def add_context_field(key, value):
+    trace.get_current_span().set_attribute(key, value)
+
 
 # OpenTelemetry uses globals, so need to keep track of tracing init globally.
 tracing_inited_holder = SimpleNamespace(inited=False, processor=None)
@@ -129,7 +136,7 @@ def trace_cm(cm, name):
     """
     Add tracing around an existing context manager.
     """
-    with tracer.start_as_current_span(name):
+    with tracer(name):
         with cm as cm_obj:
             yield cm_obj
 
@@ -143,7 +150,7 @@ def trace_call(span_name):
 
     @wrapt.decorator
     def trace_and_call(wrapped, instance, args, kwargs):
-        with tracer.start_as_current_span(span_name):
+        with tracer(span_name):
             return wrapped(*args, **kwargs)
 
     return trace_and_call

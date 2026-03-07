@@ -14,13 +14,13 @@ bp = Blueprint("googlecheck", __name__)
 def googlecheck():
     sub = session.get("profile", {}).get("user_id")
     assert sub
-    with tracer.start_as_current_span("db connection"):
-        with tracer.start_as_current_span("open db connection"):
+    with tracer("db connection"):
+        with tracer("open db connection"):
             connection = psycopg2.connect(os.environ["POSTGRES_DSN"])
         try:
             with trace_cm(connection, "lookup google transaction"):
                 with trace_cm(connection.cursor(), "cursor") as cursor:
-                    with tracer.start_as_current_span("lookup google query"):
+                    with tracer("lookup google query"):
                         cursor.execute(
                             """
                             SELECT

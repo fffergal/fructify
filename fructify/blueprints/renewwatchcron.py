@@ -17,17 +17,13 @@ bp = Blueprint("renewwatchcron", __name__)
 def renewwatchcron():
     assert request.remote_addr in EASYCRON_IPS
     external_id = request.args["external_id"]
-    with tracer.start_as_current_span("db connection"):
+    with tracer("db connection"):
         try:
-            with tracer.start_as_current_span("open db connection"):
+            with tracer("open db connection"):
                 connection = psycopg2.connect(os.environ["POSTGRES_DSN"])
-            with tracer.start_as_current_span(
-                "find renewwatchcron transaction"
-            ), connection:
-                with tracer.start_as_current_span(
-                    "cursor"
-                ), connection.cursor() as cursor:
-                    with tracer.start_as_current_span("find renewwatchcron query"):
+            with tracer("find renewwatchcron transaction"), connection:
+                with tracer("cursor"), connection.cursor() as cursor:
+                    with tracer("find renewwatchcron query"):
                         cursor.execute(
                             """
                             SELECT
@@ -41,11 +37,9 @@ def renewwatchcron():
                         )
                     assert cursor.rowcount
                     g.sub, cron_id = next(cursor)
-            with tracer.start_as_current_span("find googlewatch transaction"):
-                with tracer.start_as_current_span(
-                    "cursor"
-                ), connection.cursor() as cursor:
-                    with tracer.start_as_current_span("find googlewatch query"):
+            with tracer("find googlewatch transaction"):
+                with tracer("cursor"), connection.cursor() as cursor:
+                    with tracer("find googlewatch query"):
                         cursor.execute(
                             """
                             SELECT
