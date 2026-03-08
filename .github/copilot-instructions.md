@@ -143,30 +143,30 @@ environment variable is available in the agent sandbox.
    ![Login offer screenshot](https://github.com/user-attachments/assets/c5f402bc-6f68-4739-b8d9-e4b04f085a8a)
 
 6. **Verify Honeycomb tracing** — the `HONEYCOMB_KEY` from `.env.local`
-   is used by the Flask app to publish traces to Honeycomb (dataset `"ifttt-webhooks"`,
+   is used by the Flask app to publish traces to Honeycomb (dataset `"fructify"`,
    service `"fructify"`). After browsing the local app (step 5), confirm that spans
    reached Honeycomb using the **Honeycomb MCP server** (available as a native MCP tool
    in agent sessions). Call the `run_query` tool with these arguments:
    ```json
    {
      "environment_slug": "copilotlocal",
-     "dataset_slug": "ifttt-webhooks",
+     "dataset_slug": "fructify",
      "query_spec": {
        "calculations": [{"op": "COUNT"}],
-       "breakdowns": ["request.path"],
-       "filters": [{"column": "service_name", "op": "=", "value": "fructify"}],
+       "breakdowns": ["http.target"],
+       "filters": [{"column": "service.name", "op": "=", "value": "fructify"}],
        "time_range": 600
      }
    }
    ```
    This should return a results table like:
    ```
-   | COUNT | request.path |
+   | COUNT | http.target |
    | --- | --- |
    | 6 | /api/v1/authcheck |
    ```
    Each page request in step 5 produces at least one span. Results are broken down by
-   `request.path`, so browsing different pages shows distinct URLs with their span counts.
+   `http.target`, so browsing different pages shows distinct URLs with their span counts.
 
    If you cannot see data in Honeycomb, check these common causes in order:
 
@@ -181,10 +181,14 @@ environment variable is available in the agent sandbox.
       curl -s "https://api.honeycomb.io/1/auth" -H "X-Honeycomb-Team: $HONEYCOMB_KEY"
       # Valid key → {"api_key_access":...}  |  blocked → curl: (6) Could not resolve host
       ```
-   3. **Beeline initialization errors are silent** — the beeline library logs at
-      DEBUG level to the Python `honeycomb-sdk` logger, not to Flask's stdout, so
-      they will not appear in `/tmp/flask.log`. The only reliable check is confirming
-      `HONEYCOMB_KEY` is non-empty (step 1 above) before Flask starts.
+   3. **OpenTelemetry export errors appear in Flask output** — the OTel SDK logs export
+      failures as Python `WARNING`-level messages, which Flask's development server
+      forwards to its output (stdout/stderr). If spans are not arriving, run Flask
+      interactively (not in background) and look for lines like
+      `Failed to export batch code: ...` or HTTP error responses from
+      `api.honeycomb.io`. The most common cause is an incorrect or empty `HONEYCOMB_KEY`
+      (check step 1). Note that the dataset `"fructify"` is created automatically on
+      first use — it will not exist in Honeycomb until the first successful export.
 
 ### Fixing Failures
 
