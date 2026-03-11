@@ -102,7 +102,7 @@ def init_tracing():
                     endpoint="https://api.honeycomb.io/v1/traces",
                     headers={
                         "x-honeycomb-team": os.environ["HONEYCOMB_KEY"],
-                        "x-honeycomb-dataset": "fructify",
+                        "x-honeycomb-dataset": "ifttt-webhooks",
                     },
                 )
             )

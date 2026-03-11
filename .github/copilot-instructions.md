@@ -143,14 +143,14 @@ environment variable is available in the agent sandbox.
    ![Login offer screenshot](https://github.com/user-attachments/assets/c5f402bc-6f68-4739-b8d9-e4b04f085a8a)
 
 6. **Verify Honeycomb tracing** — the `HONEYCOMB_KEY` from `.env.local`
-   is used by the Flask app to publish traces to Honeycomb (dataset `"fructify"`,
+   is used by the Flask app to publish traces to Honeycomb (dataset `"ifttt-webhooks"`,
    service `"fructify"`). After browsing the local app (step 5), confirm that spans
    reached Honeycomb using the **Honeycomb MCP server** (available as a native MCP tool
    in agent sessions). Call the `run_query` tool with these arguments:
    ```json
    {
      "environment_slug": "copilotlocal",
-     "dataset_slug": "fructify",
+     "dataset_slug": "ifttt-webhooks",
      "query_spec": {
        "calculations": [{"op": "COUNT"}],
        "breakdowns": ["http.target"],
@@ -187,7 +187,7 @@ environment variable is available in the agent sandbox.
       interactively (not in background) and look for lines like
       `Failed to export batch code: ...` or HTTP error responses from
       `api.honeycomb.io`. The most common cause is an incorrect or empty `HONEYCOMB_KEY`
-      (check step 1). Note that the dataset `"fructify"` is created automatically on
+      (check step 1). Note that the dataset `"ifttt-webhooks"` is created automatically on
       first use — it will not exist in Honeycomb until the first successful export.
 
 ### Fixing Failures
