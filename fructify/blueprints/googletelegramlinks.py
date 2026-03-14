@@ -9,7 +9,6 @@ from flask import Blueprint, request, session, url_for
 
 from fructify.auth import oauth
 
-
 bp = Blueprint("googletelegramlinks", __name__)
 
 
@@ -53,20 +52,17 @@ def googletelegramlinks_put():
             with tracer("calendarchatlink maintenance transaction"), connection:
                 with tracer("cursor"), connection.cursor() as cursor:
                     with tracer("calendarchatlink exists query"):
-                        cursor.execute(
-                            """
+                        cursor.execute("""
                             SELECT
                                 table_name
                             FROM
                                 information_schema.tables
                             WHERE
                                 table_name = 'calendarchatlink'
-                            """
-                        )
+                            """)
                     if not cursor.rowcount:
                         with tracer("create calendatchatlink table query"):
-                            cursor.execute(
-                                """
+                            cursor.execute("""
                                 CREATE TABLE
                                     calendarchatlink (
                                         external_id text,
@@ -76,26 +72,22 @@ def googletelegramlinks_put():
                                         chat_id text,
                                         chat_type text
                                     )
-                                """
-                            )
+                                """)
 
             with tracer("googlewatch maintenance transaction"), connection:
                 with tracer("cursor"), connection.cursor() as cursor:
                     with tracer("googlewatch exists query"):
-                        cursor.execute(
-                            """
+                        cursor.execute("""
                             SELECT
                                 table_name
                             FROM
                                 information_schema.tables
                             WHERE
                                 table_name = 'googlewatch'
-                            """
-                        )
+                            """)
                     if not cursor.rowcount:
                         with tracer("create googlewatch table query"):
-                            cursor.execute(
-                                """
+                            cursor.execute("""
                                 CREATE TABLE
                                     googlewatch (
                                         external_id text,
@@ -103,8 +95,7 @@ def googletelegramlinks_put():
                                         sub text,
                                         calendar_id text
                                     )
-                                """
-                            )
+                                """)
 
             with tracer("google telegram link exists transaction"), connection:
                 with tracer("cursor"), connection.cursor() as cursor:
@@ -212,28 +203,24 @@ def googletelegramlinks_put():
                 with tracer("renewwatchcron maintenance transaction"), connection:
                     with tracer("cursor"), connection.cursor() as cursor:
                         with tracer("renewwatchcron exists query"):
-                            cursor.execute(
-                                """
+                            cursor.execute("""
                                 SELECT
                                     table_name
                                 FROM
                                     information_schema.tables
                                 WHERE
                                     table_name = 'renewwatchcron'
-                                """
-                            )
+                                """)
                         if not cursor.rowcount:
                             with tracer("renewwatchcron create query"):
-                                cursor.execute(
-                                    """
+                                cursor.execute("""
                                     CREATE TABLE
                                         renewwatchcron (
                                             sub text,
                                             external_id text,
                                             cron_id text
                                         )
-                                    """
-                                )
+                                    """)
 
                 cron_response = requests.get(
                     "https://www.easycron.com/rest/add",

@@ -2,7 +2,6 @@ from flask import Blueprint
 
 from fructify.auth import oauth
 
-
 bp = Blueprint("googlecalendars", __name__)
 
 
