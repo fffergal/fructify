@@ -1,7 +1,6 @@
 from flask import Blueprint, redirect, session
 from fructify.auth import oauth
 
-
 bp = Blueprint("auth0callback", __name__)
 
 

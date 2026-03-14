@@ -16,7 +16,6 @@ from fructify.googleevents import (
     parse_event_time,
 )
 
-
 bp = Blueprint("calendarcron", __name__)
 
 
@@ -144,28 +143,24 @@ def calendarcron():
                     with tracer("event_details table exists transaction"), connection:
                         with tracer("cursor"), connection.cursor() as cursor:
                             with tracer("event_details table exists query"):
-                                cursor.execute(
-                                    """
+                                cursor.execute("""
                                     SELECT
                                         table_name
                                     FROM
                                         information_schema.tables
                                     WHERE
                                         table_name = 'event_details'
-                                    """
-                                )
+                                    """)
                                 if not cursor.rowcount:
                                     with tracer("create event_details table query"):
-                                        cursor.execute(
-                                            """
+                                        cursor.execute("""
                                             CREATE TABLE
                                                 event_details (
                                                     calendar_type text,
                                                     calendar_id text,
                                                     summary text
                                                 )
-                                            """
-                                        )
+                                            """)
                     with tracer("update event_details transaction"), connection:
                         with tracer("cursor"), connection.cursor() as cursor:
                             with tracer("clear event_details query"):
