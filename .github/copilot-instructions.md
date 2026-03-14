@@ -98,8 +98,7 @@ environment variable is available in the agent sandbox.
 2. **Link and pull environment variables:**
    ```bash
    # Link the project and pull developer env vars (includes HONEYCOMB_KEY)
-   vercel pull --yes --token "$VERCEL_TOKEN"
-   vercel env pull .env.local --yes --token "$VERCEL_TOKEN"
+   vercel link --non-interactive --scope fergal-hainey-s-team --project fructify --yes --token "$VERCEL_TOKEN"
    ```
    This creates `.env.local` with the developer secrets (including `HONEYCOMB_KEY`),
    and automatically adds `.env.local` to `.gitignore`.
@@ -145,9 +144,10 @@ environment variable is available in the agent sandbox.
 6. **Verify Honeycomb tracing** — the `HONEYCOMB_KEY` from `.env.local`
    is used by the Flask app to publish traces to Honeycomb. On non-Classic Honeycomb
    Environments, data routes to a dataset named after the service (`"fructify"`), not
-   the `x-honeycomb-dataset` header. After browsing the local app (step 5), confirm
-   that spans reached Honeycomb using the **Honeycomb MCP server** (available as a
-   native MCP tool in agent sessions). Call the `run_query` tool with these arguments:
+   the `x-honeycomb-dataset` header. The production environment is classic, and local
+   dev is non-classic. After browsing the local app (step 5), confirm that spans
+   reached Honeycomb using the **Honeycomb MCP server** (available as a native MCP tool
+   in agent sessions). Call the `run_query` tool with these arguments:
    ```json
    {
      "environment_slug": "copilotlocal",

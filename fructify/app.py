@@ -1,6 +1,7 @@
 import os
 
 from flask import Flask
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 from fructify.auth import oauth
 from fructify.blueprints import (
@@ -64,4 +65,8 @@ def create_app():
     app.register_blueprint(telegramdeeplink.bp)
     app.register_blueprint(telegramwebhook.bp)
 
+    if os.environ.get("FLASK_PROXY_FIX") == "1":
+        app.wsgi_app = ProxyFix(
+            app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_port=1, x_prefix=1
+        )
     return app
