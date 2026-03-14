@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 
 import psycopg2
 import requests
-from beeline import tracer
+from fructify.tracing import tracer
 from flask import Blueprint, g, request, url_for
 from psycopg2.extras import execute_values
 

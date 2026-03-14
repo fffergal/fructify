@@ -2,7 +2,7 @@ import datetime
 import os
 
 from flask import Blueprint, request
-import beeline
+from fructify.tracing import tracer
 import psycopg2
 import requests
 
@@ -27,20 +27,20 @@ def telegramwebhook():
     chat_id = request.json["message"]["chat"]["id"]
     if text.startswith("/start"):
         secret = text.rsplit(" ", 1)[1]
-        with beeline.tracer("db connection"):
-            with beeline.tracer("open db connection"):
+        with tracer("db connection"):
+            with tracer("open db connection"):
                 connection = psycopg2.connect(os.environ["POSTGRES_DSN"])
             try:
                 with trace_cm(connection, "delete expired secrets transaction"):
                     with trace_cm(connection.cursor(), "cursor") as cursor:
-                        with beeline.tracer("delete expired secrets query"):
+                        with tracer("delete expired secrets query"):
                             cursor.execute(
                                 "DELETE FROM secret WHERE expires < %s",
                                 (datetime.datetime.utcnow(),),
                             )
                 with trace_cm(connection, "lookup secret transaction"):
                     with trace_cm(connection.cursor(), "cursor") as cursor:
-                        with beeline.tracer("lookup secret query"):
+                        with tracer("lookup secret query"):
                             cursor.execute(
                                 "SELECT sub FROM secret WHERE secret = %s", (secret,)
                             )
@@ -67,7 +67,7 @@ def telegramwebhook():
                                 return ("", 204)
                 with trace_cm(connection, "link table exists transaction"):
                     with trace_cm(connection.cursor(), "cursor") as cursor:
-                        with beeline.tracer("link table exists query"):
+                        with tracer("link table exists query"):
                             cursor.execute(
                                 """
                                 SELECT
@@ -79,7 +79,7 @@ def telegramwebhook():
                                 """
                             )
                         if not cursor.rowcount:
-                            with beeline.tracer("create link table query"):
+                            with tracer("create link table query"):
                                 cursor.execute(
                                     """
                                     CREATE TABLE
@@ -88,7 +88,7 @@ def telegramwebhook():
                                 )
                 with trace_cm(connection, "link telegram transaction"):
                     with trace_cm(connection.cursor(), "cursor") as cursor:
-                        with beeline.tracer("telegram link exists query"):
+                        with tracer("telegram link exists query"):
                             cursor.execute(
                                 """
                                 SELECT
@@ -103,7 +103,7 @@ def telegramwebhook():
                                 (sub, str(chat_id)),
                             )
                         if not cursor.rowcount:
-                            with beeline.tracer("insert telegram link query"):
+                            with tracer("insert telegram link query"):
                                 cursor.execute(
                                     """
                                     INSERT INTO
@@ -115,7 +115,7 @@ def telegramwebhook():
                                 )
                 with trace_cm(connection, "telegram table exists transaction"):
                     with trace_cm(connection.cursor(), "cursor") as cursor:
-                        with beeline.tracer("telegram table exists query"):
+                        with tracer("telegram table exists query"):
                             cursor.execute(
                                 """
                                 SELECT
@@ -127,7 +127,7 @@ def telegramwebhook():
                                 """
                             )
                         if not cursor.rowcount:
-                            with beeline.tracer("create telegram table query"):
+                            with tracer("create telegram table query"):
                                 cursor.execute(
                                     """
                                     CREATE TABLE
@@ -136,14 +136,14 @@ def telegramwebhook():
                                 )
                 with trace_cm(connection, "save telegram transaction"):
                     with trace_cm(connection.cursor(), "cursor") as cursor:
-                        with beeline.tracer("telegram exists query"):
+                        with tracer("telegram exists query"):
                             cursor.execute(
                                 "SELECT issuer_sub FROM telegram WHERE issuer_sub = %s",
                                 (str(chat_id),),
                             )
                         chat_title = request.json["message"]["chat"]["title"]
                         if cursor.rowcount:
-                            with beeline.tracer("update telegram query"):
+                            with tracer("update telegram query"):
                                 cursor.execute(
                                     """
                                     UPDATE
@@ -156,7 +156,7 @@ def telegramwebhook():
                                     (chat_title, str(chat_id)),
                                 )
                         else:
-                            with beeline.tracer("insert telegram query"):
+                            with tracer("insert telegram query"):
                                 cursor.execute(
                                     """
                                     INSERT INTO
@@ -171,7 +171,7 @@ def telegramwebhook():
                                 )
                 with trace_cm(connection, "delete secret transaction"):
                     with trace_cm(connection.cursor(), "cursor") as cursor:
-                        with beeline.tracer("delete secret query"):
+                        with tracer("delete secret query"):
                             cursor.execute(
                                 "DELETE FROM secret WHERE secret = %s", (secret,)
                             )

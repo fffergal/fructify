@@ -4,7 +4,7 @@ from contextlib import suppress
 
 import psycopg2
 import requests
-from beeline import add_context_field, tracer
+from fructify.tracing import add_context_field, tracer
 from flask import Blueprint, g, request, url_for
 from psycopg2.extras import execute_values
 
