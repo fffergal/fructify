@@ -12,20 +12,19 @@ GitHub Action — check the statuses reported directly on the commit.
 The CI runs two jobs (see `.circleci/config.yml` for the authoritative config):
 
 **`test_python`** (Python 3.12):
-- `pip install -r dev-requirements.txt`
-- `black --check .` — formatting check
-- `flake8` — linting
-- `tox` — runs the test suite
-- `pip-compile --no-annotate --no-emit-index-url` — checks `requirements.txt` is up to date
-- `pip-compile --no-annotate --no-emit-index-url dev-requirements.in` — checks `dev-requirements.txt` is up to date
-- `git diff --exit-code -- dev-requirements.txt requirements.txt` — ensures compiled requirement files were committed
+- `pip install uv`
+- `uv sync --frozen` — installs pinned dependencies from `uv.lock`
+- `uv run black --check .` — formatting check
+- `uv run flake8` — linting
+- `uv run tox` — runs the test suite
+- `uv lock --check` — checks `uv.lock` is up to date
 
 **`test_javascript`** (Node 22):
 - `npm ci`
 - `npm run lint`
 
 For faster local iteration, run the same commands locally using the pinned
-dependency versions from `dev-requirements.txt` / `package-lock.json`. But
+dependency versions from `uv.lock` / `package-lock.json`. But
 always wait for the real Circle CI status on the commit — a local pass does not
 guarantee a CI pass.
 
