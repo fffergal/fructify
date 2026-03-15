@@ -1,0 +1,32 @@
+[project]
+name = "fructify"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+    "authlib~=1.0",
+    "blinker~=1.4",
+    "flask~=3.1",
+    "opentelemetry-exporter-otlp-proto-http~=1.28",
+    "opentelemetry-instrumentation-flask>=0.49b0",
+    "opentelemetry-instrumentation-requests>=0.49b0",
+    "opentelemetry-sdk~=1.28",
+    "psycopg2-binary~=2.9",
+    "requests~=2.23",
+    "wrapt~=1.16",
+]
+
+[dependency-groups]
+dev = [
+    "black~=26.3",
+    "flake8~=7.0",
+    "python-dotenv~=0.21",
+    "tox>=4.0",
+    "tox-uv>=1.0",
+]
+
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+exclude = ["tests*"]
