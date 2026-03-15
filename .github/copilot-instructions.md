@@ -98,9 +98,13 @@ environment variable is available in the agent sandbox.
    ```bash
    # Link the project and pull developer env vars (includes HONEYCOMB_KEY)
    vercel link --non-interactive --scope fergal-hainey-s-team --project fructify --yes --token "$VERCEL_TOKEN"
+   # Pull preview env vars for app secrets (FLASK_SECRET_KEY etc.)
+   vercel env pull --environment=preview .vercel/.env.preview.local --token "$VERCEL_TOKEN"
    ```
-   This creates `.env.local` with the developer secrets (including `HONEYCOMB_KEY`),
+   `vercel link` creates `.env.local` with `HONEYCOMB_KEY` (developer-type variable),
    and automatically adds `.env.local` to `.gitignore`.
+   `vercel env pull --environment=preview` writes the app secrets to
+   `.vercel/.env.preview.local`.
 
 3. **Check the build works** (optional but useful to confirm a build change is
    sound before waiting for CI):
@@ -114,16 +118,17 @@ environment variable is available in the agent sandbox.
    The `next.config.js` proxies `/api/...` to Flask on port 5000 in development:
    ```bash
    # Terminal 1: start the Flask Python API
-   set -a && source .env.local && set +a
-   python3 -m flask --app api/index.py run --port 5000
+   # Source app secrets first, then HONEYCOMB_KEY (so .env.local takes precedence)
+   set -a && source .vercel/.env.preview.local && source .env.local && set +a
+   uv run flask --app api/index.py run --port 5000
 
    # Terminal 2: start the Next.js frontend
    npm run dev -- --port 3000
    ```
    Or as background processes in a single shell:
    ```bash
-   set -a && source .env.local && set +a
-   python3 -m flask --app api/index.py run --port 5000 > /tmp/flask.log 2>&1 &
+   set -a && source .vercel/.env.preview.local && source .env.local && set +a
+   uv run flask --app api/index.py run --port 5000 > /tmp/flask.log 2>&1 &
    npm run dev -- --port 3000 > /tmp/nextjs.log 2>&1 &
    ```
 
@@ -170,12 +175,12 @@ environment variable is available in the agent sandbox.
 
    If you cannot see data in Honeycomb, check these common causes in order:
 
-   1. **`HONEYCOMB_KEY` is empty** — confirm the key is non-empty after sourcing `.env.local`:
+   1. **`HONEYCOMB_KEY` is empty** — confirm the key is non-empty after sourcing both env files:
       ```bash
       env | grep HONEYCOMB
       ```
-      `vercel env pull .env.local` should have populated it as a developer-type variable.
-      If still empty, re-run `vercel env pull .env.local --yes --token "$VERCEL_TOKEN"`.
+      `vercel link` should have populated `.env.local` with `HONEYCOMB_KEY`.
+      If still empty, re-run `vercel link` with the same arguments as in step 2.
    2. **`api.honeycomb.io` is unreachable** — confirm connectivity:
       ```bash
       curl -s "https://api.honeycomb.io/1/auth" -H "X-Honeycomb-Team: $HONEYCOMB_KEY"
