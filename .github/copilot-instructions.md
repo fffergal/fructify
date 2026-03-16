@@ -12,20 +12,19 @@ GitHub Action — check the statuses reported directly on the commit.
 The CI runs two jobs (see `.circleci/config.yml` for the authoritative config):
 
 **`test_python`** (Python 3.12):
-- `pip install -r dev-requirements.txt`
-- `black --check .` — formatting check
-- `flake8` — linting
-- `tox` — runs the test suite
-- `pip-compile --no-annotate --no-emit-index-url` — checks `requirements.txt` is up to date
-- `pip-compile --no-annotate --no-emit-index-url dev-requirements.in` — checks `dev-requirements.txt` is up to date
-- `git diff --exit-code -- dev-requirements.txt requirements.txt` — ensures compiled requirement files were committed
+- `pip install uv`
+- `uv sync --frozen` — installs pinned dependencies from `uv.lock`
+- `uv run black --check .` — formatting check
+- `uv run flake8` — linting
+- `uv run tox` — runs the test suite
+- `uv lock --check` — checks `uv.lock` is up to date
 
 **`test_javascript`** (Node 22):
 - `npm ci`
 - `npm run lint`
 
 For faster local iteration, run the same commands locally using the pinned
-dependency versions from `dev-requirements.txt` / `package-lock.json`. But
+dependency versions from `uv.lock` / `package-lock.json`. But
 always wait for the real Circle CI status on the commit — a local pass does not
 guarantee a CI pass.
 
@@ -92,16 +91,15 @@ environment variable is available in the agent sandbox.
 1. **Install prerequisites:**
    ```bash
    npm install -g vercel
-   pip install uv   # required by vercel build for Python functions
    ```
+   uv is also required — install it following https://docs.astral.sh/uv/getting-started/installation/
 
 2. **Link and pull environment variables:**
    ```bash
-   # Link the project and pull developer env vars (includes HONEYCOMB_KEY)
    vercel link --non-interactive --scope fergal-hainey-s-team --project fructify --yes --token "$VERCEL_TOKEN"
    ```
-   This creates `.env.local` with the developer secrets (including `HONEYCOMB_KEY`),
-   and automatically adds `.env.local` to `.gitignore`.
+   This creates `.env.local` with all the secrets needed to run locally, and
+   automatically adds `.env.local` to `.gitignore`.
 
 3. **Check the build works** (optional but useful to confirm a build change is
    sound before waiting for CI):
@@ -116,7 +114,7 @@ environment variable is available in the agent sandbox.
    ```bash
    # Terminal 1: start the Flask Python API
    set -a && source .env.local && set +a
-   python3 -m flask --app api/index.py run --port 5000
+   uv run flask --app api/index.py run --port 5000
 
    # Terminal 2: start the Next.js frontend
    npm run dev -- --port 3000
@@ -124,7 +122,7 @@ environment variable is available in the agent sandbox.
    Or as background processes in a single shell:
    ```bash
    set -a && source .env.local && set +a
-   python3 -m flask --app api/index.py run --port 5000 > /tmp/flask.log 2>&1 &
+   uv run flask --app api/index.py run --port 5000 > /tmp/flask.log 2>&1 &
    npm run dev -- --port 3000 > /tmp/nextjs.log 2>&1 &
    ```
 
@@ -175,8 +173,8 @@ environment variable is available in the agent sandbox.
       ```bash
       env | grep HONEYCOMB
       ```
-      `vercel env pull .env.local` should have populated it as a developer-type variable.
-      If still empty, re-run `vercel env pull .env.local --yes --token "$VERCEL_TOKEN"`.
+      `vercel link` should have populated `.env.local` with `HONEYCOMB_KEY`.
+      If still empty, re-run `vercel link` with the same arguments as in step 2.
    2. **`api.honeycomb.io` is unreachable** — confirm connectivity:
       ```bash
       curl -s "https://api.honeycomb.io/1/auth" -H "X-Honeycomb-Team: $HONEYCOMB_KEY"

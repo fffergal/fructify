@@ -4,11 +4,10 @@ build
 .env
 *.egg-info
 .tox
+.venv
 
 .vercel
 .python-version
-uv.lock
-pyproject.toml
 
 # dependencies
 /node_modules
