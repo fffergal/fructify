@@ -91,20 +91,15 @@ environment variable is available in the agent sandbox.
 1. **Install prerequisites:**
    ```bash
    npm install -g vercel
-   pip install uv   # required by vercel build for Python functions
    ```
+   uv is also required — install it following https://docs.astral.sh/uv/getting-started/installation/
 
 2. **Link and pull environment variables:**
    ```bash
-   # Link the project and pull developer env vars (includes HONEYCOMB_KEY)
    vercel link --non-interactive --scope fergal-hainey-s-team --project fructify --yes --token "$VERCEL_TOKEN"
-   # Pull preview env vars for app secrets (FLASK_SECRET_KEY etc.)
-   vercel env pull --environment=preview .vercel/.env.preview.local --token "$VERCEL_TOKEN"
    ```
-   `vercel link` creates `.env.local` with `HONEYCOMB_KEY` (developer-type variable),
-   and automatically adds `.env.local` to `.gitignore`.
-   `vercel env pull --environment=preview` writes the app secrets to
-   `.vercel/.env.preview.local`.
+   This creates `.env.local` with all the secrets needed to run locally, and
+   automatically adds `.env.local` to `.gitignore`.
 
 3. **Check the build works** (optional but useful to confirm a build change is
    sound before waiting for CI):
@@ -118,8 +113,7 @@ environment variable is available in the agent sandbox.
    The `next.config.js` proxies `/api/...` to Flask on port 5000 in development:
    ```bash
    # Terminal 1: start the Flask Python API
-   # Source app secrets first, then HONEYCOMB_KEY (so .env.local takes precedence)
-   set -a && source .vercel/.env.preview.local && source .env.local && set +a
+   set -a && source .env.local && set +a
    uv run flask --app api/index.py run --port 5000
 
    # Terminal 2: start the Next.js frontend
@@ -127,7 +121,7 @@ environment variable is available in the agent sandbox.
    ```
    Or as background processes in a single shell:
    ```bash
-   set -a && source .vercel/.env.preview.local && source .env.local && set +a
+   set -a && source .env.local && set +a
    uv run flask --app api/index.py run --port 5000 > /tmp/flask.log 2>&1 &
    npm run dev -- --port 3000 > /tmp/nextjs.log 2>&1 &
    ```
@@ -175,7 +169,7 @@ environment variable is available in the agent sandbox.
 
    If you cannot see data in Honeycomb, check these common causes in order:
 
-   1. **`HONEYCOMB_KEY` is empty** — confirm the key is non-empty after sourcing both env files:
+   1. **`HONEYCOMB_KEY` is empty** — confirm the key is non-empty after sourcing `.env.local`:
       ```bash
       env | grep HONEYCOMB
       ```

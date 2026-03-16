@@ -4,16 +4,19 @@ Webhooks to make me more productive. For use with IFTTT.
 
 ## Quick start
 
-Secrets are inserted as environment variables. You can see which secrets are
-needed by looking in vercel.json. Put local secrets in a .env file. If you have
-access to LastPass and the lpass CLI installed, you can use make_env.sh to make
-the .env file.
-
-To work on the application, you will need the dependencies. Install Python
-dependencies (including dev tools) with:
+Get the environment variables by linking to the Vercel project with the
+[Vercel CLI][vercel-cli]:
 
 ```
-pip install uv
+vercel link
+```
+
+This creates `.env.local` with all the secrets needed to run locally.
+
+To work on the application, you will need the dependencies. Install
+[uv][uv-install], then install Python dependencies (including dev tools) with:
+
+```
 uv sync
 ```
 
@@ -50,3 +53,5 @@ Frucitify is deployed to [Vercel][vercel], every merge to master is deployed
 to https://fructify.app, and each PR has preview.
 
 [vercel]: https://vercel.com/
+[vercel-cli]: https://vercel.com/docs/cli
+[uv-install]: https://docs.astral.sh/uv/getting-started/installation/
