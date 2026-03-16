@@ -4,7 +4,7 @@
 #
 #    pip-compile --no-annotate --no-emit-index-url
 #
-authlib==1.6.8
+authlib==1.6.9
 blinker==1.9.0
 certifi==2024.7.4
 cffi==2.0.0
